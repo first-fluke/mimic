@@ -1,0 +1,106 @@
+experimental_monorepo_root = true
+
+[monorepo]
+config_roots = [
+    "apps/*",
+    "packages/*",
+]
+
+[settings]
+experimental = true
+
+[tools]
+node = "24"
+bun = "latest"
+
+[hooks]
+postinstall = '''
+  mkdir -p .git/hooks
+
+  # commit-msg
+  cat > .git/hooks/commit-msg <<'EOF'
+#!/bin/sh
+exec mise run git:commit-msg -- "$1"
+EOF
+  chmod +x .git/hooks/commit-msg
+
+  # pre-commit
+  cat > .git/hooks/pre-commit <<'EOF'
+#!/bin/sh
+exec mise run git:pre-commit
+EOF
+  chmod +x .git/hooks/pre-commit
+
+  # pre-push
+  cat > .git/hooks/pre-push <<'EOF'
+#!/bin/sh
+exec mise run git:pre-push
+EOF
+  chmod +x .git/hooks/pre-push
+'''
+
+[tasks."git:commit-msg"]
+description = "Validate commit message using commitlint"
+run = "bunx @commitlint/cli@20 --edit $1"
+
+[tasks."git:pre-commit"]
+description = "Run conditional checks for staging files"
+run = '''
+#!/usr/bin/env bash
+changed=$(git diff --cached --name-only)
+
+if echo "$changed" | grep -q "^apps/api/"; then
+    echo "[pre-commit] apps/api detected, running lint..."
+    mise //apps/api:lint || exit 1
+fi
+
+if echo "$changed" | grep -q "^apps/web/"; then
+    echo "[pre-commit] apps/web detected, running lint..."
+    mise //apps/web:lint || exit 1
+fi
+
+if echo "$changed" | grep -q "^apps/worker/"; then
+    echo "[pre-commit] apps/worker detected, running lint..."
+    mise //apps/worker:lint || exit 1
+fi
+
+if echo "$changed" | grep -q "^apps/mobile/"; then
+    echo "[pre-commit] apps/mobile detected, running lint..."
+    mise //apps/mobile:lint || exit 1
+fi
+
+if echo "$changed" | grep -qE "Dockerfile$"; then
+    echo "[pre-commit] Dockerfile detected, running hadolint..."
+    echo "$changed" | grep -E "Dockerfile$" | xargs hadolint || exit 1
+fi
+'''
+
+[tasks."git:pre-push"]
+description = "Validate branch name and run tests before push"
+run = '''
+#!/usr/bin/env bash
+bunx @gracefullight/validate-branch || exit 1
+
+# Get changed files compared to origin
+changed=$(git diff --name-only origin/main...HEAD 2>/dev/null || git diff --name-only HEAD~1)
+
+if echo "$changed" | grep -q "^apps/api/"; then
+    echo "[pre-push] apps/api detected, running test..."
+    mise //apps/api:test || exit 1
+fi
+
+if echo "$changed" | grep -q "^apps/web/"; then
+    echo "[pre-push] apps/web detected, running test..."
+    mise //apps/web:test || exit 1
+fi
+
+if echo "$changed" | grep -q "^apps/worker/"; then
+    echo "[pre-push] apps/worker detected, running test..."
+    mise //apps/worker:test || exit 1
+fi
+
+if echo "$changed" | grep -q "^apps/mobile/"; then
+    echo "[pre-push] apps/mobile detected, running test..."
+    mise //apps/mobile:test || exit 1
+fi
+'''
