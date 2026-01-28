@@ -1,0 +1,87 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      vscode-mimic--release_created: ${{ steps.release.outputs.vscode-mimic--release_created }}
+      vscode-mimic--tag_name: ${{ steps.release.outputs.vscode-mimic--tag_name }}
+      opencode-plugin-mimic--release_created: ${{ steps.release.outputs.opencode-plugin-mimic--release_created }}
+      opencode-plugin-mimic--tag_name: ${{ steps.release.outputs.opencode-plugin-mimic--tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  release-vscode-mimic:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.vscode-mimic--release_created }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/vscode-mimic
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build VS Code Extension
+        run: bun run compile
+
+      - name: Publish to VS Code Marketplace
+        uses: HaaLeo/publish-vscode-extension@v1
+        with:
+          pat: ${{ secrets.VSCE_PAT }}
+          registryUrl: https://marketplace.visualstudio.com
+          packagePath: apps/vscode-mimic
+
+      - name: Publish to Open VSX Registry
+        uses: HaaLeo/publish-vscode-extension@v1
+        with:
+          pat: ${{ secrets.OVSX_PAT }}
+          registryUrl: https://open-vsx.org
+          packagePath: apps/vscode-mimic
+
+  release-opencode-plugin:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.opencode-plugin-mimic--release_created }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/opencode-plugin-mimic
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build Plugin
+        run: bun run build
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

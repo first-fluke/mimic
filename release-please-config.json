@@ -1,0 +1,19 @@
+{
+	"$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+	"include-component-in-tag": true,
+	"include-v-in-tag": true,
+	"tag-separator": "@",
+	"separate-pull-requests": true,
+	"packages": {
+		"apps/vscode-mimic": {
+			"path": "apps/vscode-mimic",
+			"release-type": "node",
+			"package-name": "vscode-mimic"
+		},
+		"apps/opencode-plugin-mimic": {
+			"path": "apps/opencode-plugin-mimic",
+			"release-type": "node",
+			"package-name": "opencode-plugin-mimic"
+		}
+	}
+}
