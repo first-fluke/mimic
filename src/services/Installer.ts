@@ -117,6 +117,18 @@ export class Installer {
 
         for (const folder of workspaceFolders) {
             this.outputChannel.appendLine(`[MIMIC] Checking .gitignore for workspace: ${folder.name}`);
+
+            // Ensure local .mimic directory exists (Default to Project-Local Storage)
+            const mimicDir = path.join(folder.uri.fsPath, '.mimic');
+            if (!fs.existsSync(mimicDir)) {
+                try {
+                    fs.mkdirSync(mimicDir, { recursive: true });
+                    this.outputChannel.appendLine(`[MIMIC] Initialized local storage: ${mimicDir}`);
+                } catch (e) {
+                    this.outputChannel.appendLine(`[MIMIC] Failed to create local directory: ${e}`);
+                }
+            }
+
             const gitignorePath = path.join(folder.uri.fsPath, '.gitignore');
 
             if (fs.existsSync(gitignorePath)) {
@@ -160,7 +172,8 @@ export class Installer {
                         this.outputChannel.appendLine(`[MIMIC] User chose No/Ignored for creation.`);
                     }
                 } else {
-                    this.outputChannel.appendLine(`[MIMIC] No .gitignore and no .git folder. Skipping.`);
+                    // Even if no git, we recommend keeping the .mimic folder local
+                    this.outputChannel.appendLine(`[MIMIC] No .gitignore and no .git folder. Local .mimic dir created.`);
                 }
             }
         }

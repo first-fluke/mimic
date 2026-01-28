@@ -47,9 +47,28 @@ __mimic_precmd() {
     # Handle newlines? (Simple replacement)
     # For now, let's keep it simple. Multiline commands might break JSONL if not careful.
     
+    # Find project-specific .mimic directory
+    local project_dir=""
+    local current_dir="$PWD"
+    
+    # Traverse up to find .mimic directory
+    while [[ "$current_dir" != "/" ]]; do
+        if [[ -d "${current_dir}/.mimic" ]]; then
+            project_dir="${current_dir}/.mimic"
+            break
+        fi
+        current_dir=$(dirname "$current_dir")
+    done
+
+    # Determine target file
+    local target_file="$MIMIC_EVENTS_FILE"
+    if [[ -n "$project_dir" ]]; then
+        target_file="${project_dir}/events.jsonl"
+    fi
+
     # Write JSON line to events file
-    # Use >> append immediately to minimalize locking issues (though shell append is usually atomic enough for this)
-    echo "{\"ts\":$current_time,\"cmd\":\"$safe_cmd\",\"cwd\":\"$PWD\",\"exit\":$exit_code,\"dur\":$duration}" >> "$MIMIC_EVENTS_FILE"
+    # Use >> append immediately to minimalize locking issues
+    echo "{\"ts\":$current_time,\"cmd\":\"$safe_cmd\",\"cwd\":\"$PWD\",\"exit\":$exit_code,\"dur\":$duration}" >> "$target_file"
 
     # Reset state
     __mimic_last_cmd=""

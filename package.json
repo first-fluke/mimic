@@ -4,7 +4,7 @@
     "description": "A lightweight, real-time AI agent that learns from your workflow and evolves with you.",
     "version": "1.0.0",
     "icon": "resources/icon.png",
-    "publisher": "mimic-agent",
+    "publisher": "mimic",
     "repository": {
         "type": "git",
         "url": "https://github.com/mimic-agent/mimic"

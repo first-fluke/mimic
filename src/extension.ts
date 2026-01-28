@@ -19,9 +19,20 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // 1. Initialize Services
     // Determine paths
-    // Priority: Always use Global Home for data persistence (matches shell hook)
-    const mimicDir = path.join(os.homedir(), '.mimic');
+    // Priority: Local Project .mimic (if exists) > Global Home .mimic
+    const globalDir = path.join(os.homedir(), '.mimic');
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    let mimicDir = globalDir;
+
+    if (workspaceFolder) {
+        const localDir = path.join(workspaceFolder.uri.fsPath, '.mimic');
+        if (fs.existsSync(localDir)) {
+            mimicDir = localDir;
+            outputChannel.appendLine(`[MIMIC] Using Local Storage: ${mimicDir}`);
+        } else {
+            outputChannel.appendLine(`[MIMIC] Using Global Storage: ${mimicDir} (Local .mimic not found)`);
+        }
+    }
 
     if (!fs.existsSync(mimicDir)) {
         fs.mkdirSync(mimicDir, { recursive: true });
@@ -30,7 +41,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const eventsPath = path.join(mimicDir, 'events.jsonl');
 
     // For services that might need the workspace root specifically (like InsightService scanning)
-    // - eventsPath: Always Global (Read/Write)
+    // - eventsPath: Determined above (Local or Global)
     // - workspaceRoot: Project Specific (Read Only for analysis)
     const workspaceRoot = workspaceFolder ? workspaceFolder.uri.fsPath : mimicDir;
 

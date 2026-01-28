@@ -180,12 +180,28 @@ export class ActivityWatcher implements vscode.Disposable {
         );
 
         // React to errors
-        // Ignore exit 130 (SIGINT/Ctrl+C) and exit 2 (Misuse of shell builtins, sometimes used for interruption)
+        // Ignore exit 130 (SIGINT/Ctrl+C) and exit 2 (Misuse of shell builtins)
         if (event.exit !== 0 && event.exit !== 130 && event.exit !== 2) {
-            this.outputChannel.appendLine(
-                `[ActivityWatcher] ⚠️ Command failed: ${event.cmd}`
-            );
-            this._onDidDetectError.fire(event.cmd);
+            // Filter out benign exit codes for specific commands
+            // e.g. 'lsof' returns 1 if no files found
+            //      'grep' returns 1 if no matches found
+            //      'diff' returns 1 if differences found
+            //      'ls' often fails on typos or missing files during exploration
+            const benignCommands = ['lsof', 'grep', 'egrep', 'fgrep', 'diff', 'cmp', 'test', '[', '[[', 'ls', 'find', 'which', 'type'];
+            // Simple command extraction (first word)
+            const firstWord = event.cmd.trim().split(/\s+/)[0];
+            const isBenign = benignCommands.includes(firstWord) && event.exit === 1;
+
+            if (!isBenign) {
+                this.outputChannel.appendLine(
+                    `[ActivityWatcher] ⚠️ Command failed: ${event.cmd}`
+                );
+                this._onDidDetectError.fire(event.cmd);
+            } else {
+                this.outputChannel.appendLine(
+                    `[ActivityWatcher] ℹ️ Ignored benign error (exit ${event.exit}): ${event.cmd}`
+                );
+            }
         }
 
         // Emit generic event for UI refresh

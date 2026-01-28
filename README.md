@@ -28,7 +28,7 @@ It's not just a command wrapper. It understands *how* you work and proactively s
 ### 1. 🔍 Live Observation (Real-time Perception)
 - **Zero Config**: Starts observing Zsh and IDE activities immediately upon installation.
 - **Micro-Second Precision**: Detects shell events usage instantly and updates the UI in real-time.
-- **Privacy First**: All data is stored **locally (`~/.mimic/`)** and never leaves your machine.
+- **Privacy First & Isolated**: Stores data in your **project's local `.mimic/` folder** by default to keep history relevant. Falls back to `~/.mimic/` only if local storage is unavailable.
 
 ### 2. ⚡ Adaptive Quick Actions
 - **Smart Curation**: Automatically identifies your most frequently used project commands (5+ executions).
@@ -91,7 +91,7 @@ npx vsce package
 
 MIMIC follows a **Cognitive Architecture** mimicking human cognitive processes:
 
-1. **Perception (`ActivityWatcher`)**: Senses shell and editor events in real-time via `~/.mimic/events.jsonl`.
+1. **Perception (`ActivityWatcher`)**: Senses shell and editor events in real-time via `Project-Local .mimic/` or `Global ~/.mimic/`.
 2. **Memory (`EventLog`)**: Accumulates time-series data locally.
 3. **Analysis (`InsightService`)**: Discovers patterns in the background using LLMs.
 4. **Action (`QuickActionService`)**: Delivers optimized tools (Buttons, Scripts) to the user.

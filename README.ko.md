@@ -28,7 +28,7 @@
 ### 1. 🔍 실시간 관찰 (Live Observation)
 - **Zero Config**: 설치 즉시 쉘(Zsh)과 IDE의 모든 활동을 투명하게 관찰합니다.
 - **Micro-Second Precision**: 사용자가 쉘 명령어를 입력하는 즉시, UI가 실시간으로 반응합니다.
-- **Privacy First**: 모든 데이터는 **로컬(`~/.mimic/`)에만 저장**되며, 외부로 유출되지 않습니다.
+- **Privacy First & Isolated**: **프로젝트 내부의 `.mimic/` 폴더**에 우선 저장하여 프로젝트별 격리성을 보장합니다. (로컬 저장소가 없을 경우에만 `~/.mimic/` 사용)
 
 ### 2. ⚡ 적응형 퀵 액션 (Adaptive Quick Actions)
 - **Smart Curation**: 프로젝트별로 자주 쓰이는 명령어(5회 이상 실행)를 자동으로 선별합니다.
@@ -90,7 +90,7 @@ npx vsce package
 
 MIMIC은 인간의 인지 과정을 모방한 **인지 아키텍처(Cognitive Architecture)**를 따릅니다.
 
-1. **감각(Perception)**: `ActivityWatcher`가 쉘/에디터 이벤트를 실시간 감지 (`~/.mimic/events.jsonl`)
+1. **감각(Perception)**: `ActivityWatcher`가 쉘/에디터 이벤트를 실시간 감지 (`Project-Local .mimic/` 또는 `Global ~/.mimic/`)
 2. **기억(Memory)**: `EventLog`에 시계열 데이터 축적
 3. **분석(Analysis)**: `InsightService`가 백그라운드에서 패턴 발견 (Debounced)
 4. **행동(Action)**: `QuickAction` 및 `SkillSynthesizer`를 통해 최적화된 도구 제공
