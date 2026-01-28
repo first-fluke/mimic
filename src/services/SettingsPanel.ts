@@ -1,129 +1,143 @@
 import * as vscode from 'vscode';
 
 export class SettingsPanel {
-    public static currentPanel: SettingsPanel | undefined;
-    private readonly _panel: vscode.WebviewPanel;
-    private readonly _extensionUri: vscode.Uri;
-    private _disposables: vscode.Disposable[] = [];
+  public static currentPanel: SettingsPanel | undefined;
+  private readonly _panel: vscode.WebviewPanel;
+  private _disposables: vscode.Disposable[] = [];
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
-        this._panel = panel;
-        this._extensionUri = extensionUri;
+  private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+    this._panel = panel;
+    this._extensionUri = extensionUri;
 
-        // Set the webview's initial html content
-        this._update();
+    // Set the webview's initial html content
+    this._update();
 
-        // Listen for when the panel is disposed
-        // This happens when the user closes the panel or when the panel is closed programmatically
-        this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+    // Listen for when the panel is disposed
+    // This happens when the user closes the panel or when the panel is closed programmatically
+    this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-        // Update the content based on view state changes
-        this._panel.onDidChangeViewState(
-            e => {
-                if (this._panel.visible) {
-                    this._update();
-                }
-            },
-            null,
-            this._disposables
-        );
+    // Update the content based on view state changes
+    this._panel.onDidChangeViewState(
+      (_e) => {
+        if (this._panel.visible) {
+          this._update();
+        }
+      },
+      null,
+      this._disposables,
+    );
 
-        // Handle messages from the webview
-        this._panel.webview.onDidReceiveMessage(
-            async message => {
-                switch (message.command) {
-                    case 'alert':
-                        vscode.window.showErrorMessage(message.text);
-                        return;
-                    case 'save':
-                        await this._saveSettings(message.data);
-                        return;
-                }
-            },
-            null,
-            this._disposables
-        );
-    }
-
-    public static createOrShow(extensionUri: vscode.Uri) {
-        const column = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
-
-        // If we already have a panel, show it.
-        if (SettingsPanel.currentPanel) {
-            SettingsPanel.currentPanel._panel.reveal(column);
+    // Handle messages from the webview
+    this._panel.webview.onDidReceiveMessage(
+      async (message) => {
+        switch (message.command) {
+          case 'alert':
+            vscode.window.showErrorMessage(message.text);
+            return;
+          case 'save':
+            await this._saveSettings(message.data);
             return;
         }
+      },
+      null,
+      this._disposables,
+    );
+  }
 
-        // Otherwise, create a new panel.
-        const panel = vscode.window.createWebviewPanel(
-            'mimicSettings',
-            'MIMIC Settings',
-            column || vscode.ViewColumn.One,
-            {
-                // Enable javascript in the webview
-                enableScripts: true,
-                // And restrict the webview to only loading content from our extension's `media` directory.
-                localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'resources')]
-            }
+  public static createOrShow(extensionUri: vscode.Uri) {
+    const column = vscode.window.activeTextEditor
+      ? vscode.window.activeTextEditor.viewColumn
+      : undefined;
+
+    // If we already have a panel, show it.
+    if (SettingsPanel.currentPanel) {
+      SettingsPanel.currentPanel._panel.reveal(column);
+      return;
+    }
+
+    // Otherwise, create a new panel.
+    const panel = vscode.window.createWebviewPanel(
+      'mimicSettings',
+      'MIMIC Settings',
+      column || vscode.ViewColumn.One,
+      {
+        // Enable javascript in the webview
+        enableScripts: true,
+        // And restrict the webview to only loading content from our extension's `media` directory.
+        localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'resources')],
+      },
+    );
+
+    SettingsPanel.currentPanel = new SettingsPanel(panel, extensionUri);
+  }
+
+  public dispose() {
+    SettingsPanel.currentPanel = undefined;
+
+    // Clean up our resources
+    this._panel.dispose();
+
+    while (this._disposables.length) {
+      const x = this._disposables.pop();
+      if (x) {
+        x.dispose();
+      }
+    }
+  }
+
+  private async _saveSettings(data: any) {
+    try {
+      const config = vscode.workspace.getConfiguration('mimic');
+
+      if (data.geminiApiKey !== undefined)
+        await config.update(
+          'geminiApiKey',
+          data.geminiApiKey,
+          vscode.ConfigurationTarget.Global,
+        );
+      if (data.openaiApiKey !== undefined)
+        await config.update(
+          'openaiApiKey',
+          data.openaiApiKey,
+          vscode.ConfigurationTarget.Global,
+        );
+      if (data.anthropicApiKey !== undefined)
+        await config.update(
+          'anthropicApiKey',
+          data.anthropicApiKey,
+          vscode.ConfigurationTarget.Global,
         );
 
-        SettingsPanel.currentPanel = new SettingsPanel(panel, extensionUri);
+      // For OAuth Credentials, we might need to store them in secrets or config?
+      // The command `mimic.setGoogleCredentials` stores them somewhere.
+      // Let's check AntigravityOAuth usage. It uses `context.secrets` or `antigravityOAuth.setCustomCredentials`.
+      // But from here I can't access that instance easily unless I inject it.
+      // For now, let's stick to the Keys in configuration.
+      // If the user wants OAuth credentials aligned, I might need to send a message to extension host to handle it.
+
+      vscode.window.showInformationMessage('MIMIC: Settings saved!');
+      this._panel.dispose();
+    } catch (e) {
+      vscode.window.showErrorMessage(`Failed to save settings: ${e}`);
     }
+  }
 
-    public dispose() {
-        SettingsPanel.currentPanel = undefined;
+  private _update() {
+    const webview = this._panel.webview;
+    this._panel.title = 'MIMIC Settings';
+    this._panel.webview.html = this._getHtmlForWebview(webview);
+  }
 
-        // Clean up our resources
-        this._panel.dispose();
+  private _getHtmlForWebview(webview: vscode.Webview) {
+    const config = vscode.workspace.getConfiguration('mimic');
+    const geminiKey = config.get('geminiApiKey', '');
+    const openaiKey = config.get('openaiApiKey', '');
+    const anthropicKey = config.get('anthropicApiKey', '');
 
-        while (this._disposables.length) {
-            const x = this._disposables.pop();
-            if (x) {
-                x.dispose();
-            }
-        }
-    }
+    // nonce for security
+    const nonce = getNonce();
 
-    private async _saveSettings(data: any) {
-        try {
-            const config = vscode.workspace.getConfiguration('mimic');
-
-            if (data.geminiApiKey !== undefined) await config.update('geminiApiKey', data.geminiApiKey, vscode.ConfigurationTarget.Global);
-            if (data.openaiApiKey !== undefined) await config.update('openaiApiKey', data.openaiApiKey, vscode.ConfigurationTarget.Global);
-            if (data.anthropicApiKey !== undefined) await config.update('anthropicApiKey', data.anthropicApiKey, vscode.ConfigurationTarget.Global);
-
-            // For OAuth Credentials, we might need to store them in secrets or config?
-            // The command `mimic.setGoogleCredentials` stores them somewhere.
-            // Let's check AntigravityOAuth usage. It uses `context.secrets` or `antigravityOAuth.setCustomCredentials`.
-            // But from here I can't access that instance easily unless I inject it.
-            // For now, let's stick to the Keys in configuration.
-            // If the user wants OAuth credentials aligned, I might need to send a message to extension host to handle it.
-
-            vscode.window.showInformationMessage('MIMIC: Settings saved!');
-            this._panel.dispose();
-        } catch (e) {
-            vscode.window.showErrorMessage(`Failed to save settings: ${e}`);
-        }
-    }
-
-    private _update() {
-        const webview = this._panel.webview;
-        this._panel.title = "MIMIC Settings";
-        this._panel.webview.html = this._getHtmlForWebview(webview);
-    }
-
-    private _getHtmlForWebview(webview: vscode.Webview) {
-        const config = vscode.workspace.getConfiguration('mimic');
-        const geminiKey = config.get('geminiApiKey', '');
-        const openaiKey = config.get('openaiApiKey', '');
-        const anthropicKey = config.get('anthropicApiKey', '');
-
-        // nonce for security
-        const nonce = getNonce();
-
-        return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -206,14 +220,15 @@ export class SettingsPanel {
     </script>
 </body>
 </html>`;
-    }
+  }
 }
 
 function getNonce() {
-    let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < 32; i++) {
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    return text;
+  let text = '';
+  const possible =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < 32; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
 }
