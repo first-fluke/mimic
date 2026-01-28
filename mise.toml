@@ -1,0 +1,80 @@
+experimental_monorepo_root = true
+
+[monorepo]
+config_roots = [
+    "apps/*",
+]
+
+[settings]
+experimental = true
+
+[tools]
+node = "24"
+bun = "latest"
+
+[hooks]
+postinstall = '''
+  mkdir -p .git/hooks
+
+  # commit-msg
+  cat > .git/hooks/commit-msg <<'EOF'
+#!/bin/sh
+exec mise run git:commit-msg -- "$1"
+EOF
+  chmod +x .git/hooks/commit-msg
+
+  # pre-commit
+  cat > .git/hooks/pre-commit <<'EOF'
+#!/bin/sh
+exec mise run git:pre-commit
+EOF
+  chmod +x .git/hooks/pre-commit
+
+  # pre-push
+  cat > .git/hooks/pre-push <<'EOF'
+#!/bin/sh
+exec mise run git:pre-push
+EOF
+  chmod +x .git/hooks/pre-push
+'''
+
+[tasks."git:commit-msg"]
+description = "Validate commit message using commitlint"
+run = "bunx @commitlint/cli@20 --edit $1"
+
+[tasks."git:pre-commit"]
+description = "Run conditional checks for staging files"
+run = '''
+#!/usr/bin/env bash
+changed=$(git diff --cached --name-only)
+
+if echo "$changed" | grep -q "^apps/vscode-mimic/"; then
+    echo "[pre-commit] apps/vscode-mimic detected, running lint..."
+    mise //apps/vscode-mimic:lint || exit 1
+fi
+
+if echo "$changed" | grep -q "^apps/opencode-plugin-mimic/"; then
+    echo "[pre-commit] apps/opencode-plugin-mimic detected, running lint..."
+    mise //apps/opencode-plugin-mimic:lint || exit 1
+fi
+'''
+
+[tasks."git:pre-push"]
+description = "Validate branch name and run tests before push"
+run = '''
+#!/usr/bin/env bash
+bunx @gracefullight/validate-branch || exit 1
+
+# Get changed files compared to origin
+changed=$(git diff --name-only origin/main...HEAD 2>/dev/null || git diff --name-only HEAD~1)
+
+if echo "$changed" | grep -q "^apps/vscode-mimic/"; then
+    echo "[pre-push] apps/vscode-mimic detected, running test..."
+    mise //apps/vscode-mimic:test || exit 1
+fi
+
+if echo "$changed" | grep -q "^apps/opencode-plugin-mimic/"; then
+    echo "[pre-push] apps/opencode-plugin-mimic detected, running test..."
+    mise //apps/opencode-plugin-mimic:test || exit 1
+fi
+'''
