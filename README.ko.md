@@ -92,8 +92,7 @@
 
 ### 필수 조건
 
-- [Bun](https://bun.sh/) (VS Code 확장용)
-- [pnpm](https://pnpm.io/) (OpenCode 플러그인용)
+- [Bun](https://bun.sh/)
 - Node.js 18+
 
 ### 설정
@@ -120,10 +119,10 @@ bun test
 
 ```bash
 cd apps/opencode-plugin-mimic
-pnpm install
-pnpm run build
-pnpm run test
-pnpm run typecheck
+bun install
+bun run build
+bun run test
+bun run typecheck
 ```
 
 ---

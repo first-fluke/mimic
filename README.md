@@ -92,8 +92,7 @@ Both implementations follow a **Cognitive Architecture** mimicking human cogniti
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) (for VS Code extension)
-- [pnpm](https://pnpm.io/) (for OpenCode plugin)
+- [Bun](https://bun.sh/)
 - Node.js 18+
 
 ### Setup
@@ -120,10 +119,10 @@ bun test
 
 ```bash
 cd apps/opencode-plugin-mimic
-pnpm install
-pnpm run build
-pnpm run test
-pnpm run typecheck
+bun install
+bun run build
+bun run test
+bun run typecheck
 ```
 
 ---
