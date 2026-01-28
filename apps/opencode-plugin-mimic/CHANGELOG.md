@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/first-fluke/mimic/compare/opencode-plugin-mimic@v0.2.0...opencode-plugin-mimic@v0.2.1) (2026-01-28)
+
+
+### Bug Fixes
+
+* add memory limits and cleanup for unbounded growth ([d6a69d7](https://github.com/first-fluke/mimic/commit/d6a69d7942574e258a19ad296115f162b78f82ce))
+* resolve type errors in evolution tool ([a1bf13d](https://github.com/first-fluke/mimic/commit/a1bf13db02b7035aefb2f61059000a767b99dae5))
+
 ## [0.2.0](https://github.com/first-fluke/mimic/compare/opencode-plugin-mimic@v0.1.11...opencode-plugin-mimic@v0.2.0) (2026-01-28)
 
 
