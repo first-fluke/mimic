@@ -398,7 +398,9 @@ export class AntigravityBridge {
 
       const req = https.request(options, (res) => {
         let body = '';
-        res.on('data', (chunk) => (body += chunk));
+        res.on('data', (chunk) => {
+          body += chunk;
+        });
         res.on('end', () => {
           if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
             try {

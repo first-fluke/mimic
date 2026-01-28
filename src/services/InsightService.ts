@@ -40,7 +40,7 @@ Example: "Create alias \`gcam='git commit -am'\` to save keystrokes."
 \`\`\`
 `;
 
-interface InsightMetadata {
+interface _InsightMetadata {
   trigger: string;
   frequency: number;
   confidence: number;

@@ -12,31 +12,36 @@ export const window = {
   showInformationMessage: vi.fn(),
   showErrorMessage: vi.fn(),
   createStatusBarItem: vi.fn().mockReturnValue({
-      show: vi.fn(),
-      hide: vi.fn(),
-      dispose: vi.fn(),
-      text: '',
-      tooltip: '',
-      command: '',
-  })
+    show: vi.fn(),
+    hide: vi.fn(),
+    dispose: vi.fn(),
+    text: '',
+    tooltip: '',
+    command: '',
+  }),
 };
 
 export const workspace = {
   getConfiguration: vi.fn().mockReturnValue({
-    get: vi.fn((key, defaultValue) => defaultValue),
+    get: vi.fn((_key, defaultValue) => defaultValue),
     update: vi.fn(),
   }),
   workspaceFolders: [],
 };
 
 export class EventEmitter {
-  private listeners: Function[] = [];
-  event = (listener: Function) => {
-      this.listeners.push(listener);
-      return { dispose: () => {} };
+  // biome-ignore lint/suspicious/noExplicitAny: Generic event listener
+  private listeners: ((...args: any[]) => any)[] = [];
+  // biome-ignore lint/suspicious/noExplicitAny: Generic event listener
+  event = (listener: (...args: any[]) => any) => {
+    this.listeners.push(listener);
+    return { dispose: () => {} };
   };
+  // biome-ignore lint/suspicious/noExplicitAny: Generic event data
   fire = (data: any) => {
-      this.listeners.forEach(l => l(data));
+    this.listeners.forEach((l) => {
+      l(data);
+    });
   };
   dispose = vi.fn();
 }
@@ -47,22 +52,22 @@ export class Disposable {
 }
 
 export const commands = {
-    registerCommand: vi.fn(),
-    executeCommand: vi.fn(),
-}
+  registerCommand: vi.fn(),
+  executeCommand: vi.fn(),
+};
 
 export const Uri = {
-    file: vi.fn((f) => ({ fsPath: f })),
-    parse: vi.fn(),
-}
+  file: vi.fn((f) => ({ fsPath: f })),
+  parse: vi.fn(),
+};
 
 export enum StatusBarAlignment {
-    Left = 1,
-    Right = 2
+  Left = 1,
+  Right = 2,
 }
 
 export enum ConfigurationTarget {
-    Global = 1,
-    Workspace = 2,
-    WorkspaceFolder = 3
+  Global = 1,
+  Workspace = 2,
+  WorkspaceFolder = 3,
 }

@@ -48,7 +48,9 @@ export class QuickActionService {
         const content = fs.readFileSync(this.ignoredPath, 'utf-8');
         const list = JSON.parse(content);
         if (Array.isArray(list)) {
-          list.forEach((cmd) => this.ignoredCommands.add(cmd));
+          list.forEach((cmd) => {
+            this.ignoredCommands.add(cmd);
+          });
         }
       } catch (error) {
         console.error('Failed to load ignored commands', error);
