@@ -17,13 +17,59 @@ export async function activate(context: vscode.ExtensionContext) {
     const outputChannel = vscode.window.createOutputChannel('MIMIC');
     outputChannel.appendLine('MIMIC: Activating...');
 
-    // 0. Auto-Install Hooks (Automation)
-    // 0. Auto-Install/Uninstall Hooks based on Config
-    const installer = new Installer(context);
-    await installer.manageHook();
+    // 1. Initialize Services
+    // Determine paths
+    // Priority: Always use Global Home for data persistence (matches shell hook)
+    const mimicDir = path.join(os.homedir(), '.mimic');
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
 
-    // Check .gitignore for .mimic folder
-    await installer.checkGitignore();
+    if (!fs.existsSync(mimicDir)) {
+        fs.mkdirSync(mimicDir, { recursive: true });
+    }
+
+    const eventsPath = path.join(mimicDir, 'events.jsonl');
+
+    // For services that might need the workspace root specifically (like InsightService scanning)
+    // - eventsPath: Always Global (Read/Write)
+    // - workspaceRoot: Project Specific (Read Only for analysis)
+    const workspaceRoot = workspaceFolder ? workspaceFolder.uri.fsPath : mimicDir;
+
+    const insightService = new InsightService(outputChannel, workspaceRoot, eventsPath);
+    const activityWatcher = new ActivityWatcher(outputChannel, eventsPath, insightService);
+    const synthesisService = new SynthesisService(outputChannel, workspaceRoot);
+    const quickActionService = new QuickActionService(outputChannel, eventsPath);
+    const antigravityOAuth = new AntigravityOAuth(context, outputChannel);
+
+    // Wire OAuth into AnalystService for Cloud API calls
+    setOAuthService(antigravityOAuth);
+
+    // 2. Initialize Antigravity Bridge (Local RPC)
+    const antigravityBridge = new AntigravityBridge(outputChannel);
+    setBridgeService(antigravityBridge);
+
+    // 3. Initialize Sidebar with service references (CRITICAL UI - REGISTER FIRST)
+    const sidebarProvider = new SidebarProvider(outputChannel, antigravityBridge, antigravityOAuth);
+    sidebarProvider.setWatcher(activityWatcher);
+    sidebarProvider.setQuickActionService(quickActionService);
+    vscode.window.registerTreeDataProvider('mimic-view', sidebarProvider);
+
+    // Refresh sidebar periodically
+    setInterval(() => sidebarProvider.refresh(), 5000);
+
+    // Initial Quota fetch using the bridge instance
+    sidebarProvider.refreshQuota();
+
+    // 4. Installer & Background Tasks (Non-Blocking)
+    const installer = new Installer(context, outputChannel);
+
+    // Auto-Install Hooks (Async, don't block activation)
+    installer.manageHook().catch(err => outputChannel.appendLine(`[MIMIC] Hook install error: ${err}`));
+
+    // Check .gitignore (Delayed to ensure UI execution)
+    outputChannel.appendLine('[MIMIC] Scheduling .gitignore check (1s delay)...');
+    setTimeout(() => {
+        installer.checkGitignore().catch(err => outputChannel.appendLine(`[MIMIC] Gitignore check error: ${err}`));
+    }, 1000); // 1 second delay
 
     // Monitor Config Changes
     vscode.workspace.onDidChangeConfiguration(async (e) => {
@@ -37,54 +83,6 @@ export async function activate(context: vscode.ExtensionContext) {
         await installer.forceInstall();
     });
     context.subscriptions.push(installHookCommand);
-
-    // 1. Initialize Services
-    // Determine paths
-    // Priority: Workspace Root > Global Home
-    let mimicDir: string;
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-
-    if (workspaceFolder) {
-        // Workspace mode: Store in <root>/.mimic
-        mimicDir = path.join(workspaceFolder.uri.fsPath, '.mimic');
-    } else {
-        // Global/Single-file mode: Store in ~/.mimic
-        mimicDir = path.join(os.homedir(), '.mimic');
-    }
-
-    if (!fs.existsSync(mimicDir)) {
-        fs.mkdirSync(mimicDir, { recursive: true });
-    }
-
-    const eventsPath = path.join(mimicDir, 'events.jsonl');
-
-    // For services that might need the workspace root specifically (like InsightService scanning)
-    const workspaceRoot = workspaceFolder ? workspaceFolder.uri.fsPath : mimicDir;
-
-    const insightService = new InsightService(outputChannel, workspaceRoot, eventsPath);
-    const activityWatcher = new ActivityWatcher(outputChannel, eventsPath, insightService);
-    const synthesisService = new SynthesisService(outputChannel, workspaceRoot);
-    const quickActionService = new QuickActionService(outputChannel, eventsPath);
-    const antigravityOAuth = new AntigravityOAuth(context, outputChannel);
-
-    // Wire OAuth into AnalystService for Cloud API calls
-    setOAuthService(antigravityOAuth);
-
-    // 4. Initialize Antigravity Bridge (Local RPC)
-    const antigravityBridge = new AntigravityBridge(outputChannel);
-    setBridgeService(antigravityBridge);
-
-    // 2. Initialize Sidebar with service references
-    const sidebarProvider = new SidebarProvider(outputChannel, antigravityBridge, antigravityOAuth);
-    sidebarProvider.setWatcher(activityWatcher);
-    sidebarProvider.setQuickActionService(quickActionService);
-    vscode.window.registerTreeDataProvider('mimic-view', sidebarProvider);
-
-    // Refresh sidebar periodically
-    setInterval(() => sidebarProvider.refresh(), 5000);
-
-    // Initial Quota fetch using the bridge instance
-    sidebarProvider.refreshQuota();
 
     // 3. Register Commands
     const analyzeCommand = vscode.commands.registerCommand('mimic.analyzePatterns', async () => {

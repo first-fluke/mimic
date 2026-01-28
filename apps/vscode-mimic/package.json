@@ -17,7 +17,8 @@
     ],
     "activationEvents": [
         "onStartupFinished",
-        "onLanguageModel:chat"
+        "onLanguageModel:chat",
+        "onView:mimic-view"
     ],
     "enabledApiProposals": [
         "languageModels"
