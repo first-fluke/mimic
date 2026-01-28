@@ -56,7 +56,7 @@ export const createEvolutionTools: ToolFactory = (ctx) => {
           if (related.length === 0) return "";
           return related
             .slice(0, 3)
-            .map((inst: Instinct) => `\`${inst.trigger}\``)
+            .map((inst: Instinct) => `\`${inst.title}\``)
             .join(", ");
         };
 
@@ -130,8 +130,8 @@ export const createEvolutionTools: ToolFactory = (ctx) => {
 
           for (const inst of domainInstincts.slice(0, 10)) {
             const confidence = Math.round(inst.confidence * 100);
-            output += `- **${inst.trigger}** (${confidence}% confidence)\n`;
-            output += `  - Action: ${inst.action}\n`;
+            output += `- **${inst.title}** (${confidence}% confidence)\n`;
+            output += `  - Description: ${inst.description}\n`;
           }
           output += "\n";
         }
