@@ -8,7 +8,6 @@
   <a href="#packages">Packages</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#development">Development</a> •
-  <a href="#release-management">Release</a> •
   <a href="./README.ko.md">한국어</a>
 </p>
 
@@ -124,27 +123,6 @@ bun run build
 bun run test
 bun run typecheck
 ```
-
----
-
-## Release Management
-
-This repository uses [Release Please](https://github.com/googleapis/release-please) for automated versioning and releases.
-
-### Conventional Commits
-
-Use conventional commit messages to trigger version bumps:
-
-| Commit Type | Version Bump | Example |
-|-------------|--------------|---------|
-| `feat:` | Minor | `feat: add new pattern detector` |
-| `fix:` | Patch | `fix: resolve memory leak in watcher` |
-| `feat!:` or `BREAKING CHANGE:` | Major | `feat!: redesign API surface` |
-
-### Package Tags
-
-- VS Code Extension: `vscode-mimic@v{version}`
-- OpenCode Plugin: `opencode-plugin-mimic@v{version}`
 
 ---
 

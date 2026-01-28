@@ -8,7 +8,6 @@
   <a href="#패키지">패키지</a> •
   <a href="#아키텍처">아키텍처</a> •
   <a href="#개발">개발</a> •
-  <a href="#릴리즈-관리">릴리즈</a> •
   <a href="./README.md">English</a>
 </p>
 
@@ -124,27 +123,6 @@ bun run build
 bun run test
 bun run typecheck
 ```
-
----
-
-## 릴리즈 관리
-
-이 저장소는 자동화된 버전 관리와 릴리즈를 위해 [Release Please](https://github.com/googleapis/release-please)를 사용합니다.
-
-### Conventional Commits
-
-버전 증가를 트리거하려면 Conventional Commit 메시지 형식을 사용하세요:
-
-| 커밋 타입 | 버전 증가 | 예시 |
-|-----------|----------|------|
-| `feat:` | 마이너 | `feat: add new pattern detector` |
-| `fix:` | 패치 | `fix: resolve memory leak in watcher` |
-| `feat!:` 또는 `BREAKING CHANGE:` | 메이저 | `feat!: redesign API surface` |
-
-### 패키지 태그
-
-- VS Code 확장: `vscode-mimic@v{version}`
-- OpenCode 플러그인: `opencode-plugin-mimic@v{version}`
 
 ---
 
