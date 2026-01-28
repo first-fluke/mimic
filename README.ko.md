@@ -93,7 +93,7 @@
 ### 필수 조건
 
 - [Bun](https://bun.sh/)
-- Node.js 18+
+- Node.js 24+
 
 ### 설정
 
@@ -150,11 +150,7 @@ bun run typecheck
 
 ## 라이선스
 
-MIT License - 자유롭게 수정하고 배포할 수 있습니다.
-
-<p align="center">
-  Made with ❤️ by the First Fluke
-</p>
+MIT License
 
 ---
 

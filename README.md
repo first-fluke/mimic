@@ -93,7 +93,7 @@ Both implementations follow a **Cognitive Architecture** mimicking human cogniti
 ### Prerequisites
 
 - [Bun](https://bun.sh/)
-- Node.js 18+
+- Node.js 24+
 
 ### Setup
 
@@ -150,11 +150,7 @@ Use conventional commit messages to trigger version bumps:
 
 ## License
 
-MIT License - Free to modify and distribute.
-
-<p align="center">
-  Made with ❤️ by the First Fluke
-</p>
+MIT License
 
 ---
 
