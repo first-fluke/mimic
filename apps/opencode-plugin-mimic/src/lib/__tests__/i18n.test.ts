@@ -12,12 +12,15 @@ import {
   resolveLanguage,
 } from "@/lib/i18n";
 
+const mockedExistsSync = vi.fn();
+const mockedReadFile = vi.fn();
+
 vi.mock("node:fs", () => ({
-  existsSync: vi.fn(),
+  existsSync: (...args: unknown[]) => mockedExistsSync(...args),
 }));
 
 vi.mock("node:fs/promises", () => ({
-  readFile: vi.fn(),
+  readFile: (...args: unknown[]) => mockedReadFile(...args),
 }));
 
 vi.mock("node:os", () => ({
@@ -27,32 +30,34 @@ vi.mock("node:os", () => ({
 describe("i18n", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedExistsSync.mockReset();
+    mockedReadFile.mockReset();
   });
 
   describe("loadMimicConfig", () => {
     it("returns empty object if file not found", async () => {
-      vi.mocked(existsSync).mockReturnValue(false);
+      mockedExistsSync.mockReturnValue(false);
       const config = await loadMimicConfig();
       expect(config).toEqual({});
     });
 
     it("parses valid config", async () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFile).mockResolvedValue(JSON.stringify({ language: "ko-KR" }));
+      mockedExistsSync.mockReturnValue(true);
+      mockedReadFile.mockResolvedValue(JSON.stringify({ language: "ko-KR" }));
       const config = await loadMimicConfig();
       expect(config).toEqual({ language: "ko-KR" });
     });
 
     it("returns empty object on invalid json", async () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFile).mockResolvedValue("invalid");
+      mockedExistsSync.mockReturnValue(true);
+      mockedReadFile.mockResolvedValue("invalid");
       const config = await loadMimicConfig();
       expect(config).toEqual({});
     });
 
     it("returns empty object if not object", async () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFile).mockResolvedValue("[]");
+      mockedExistsSync.mockReturnValue(true);
+      mockedReadFile.mockResolvedValue("[]");
       const config = await loadMimicConfig();
       expect(config).toEqual({});
     });

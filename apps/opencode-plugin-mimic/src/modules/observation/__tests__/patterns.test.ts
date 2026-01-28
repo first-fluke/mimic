@@ -4,18 +4,55 @@ import { detectCommitPatterns, getCommitMessages } from "@/lib/git";
 import { createI18n } from "@/lib/i18n";
 import { detectPatterns, surfacePatterns } from "@/modules/observation/patterns";
 
+const mockedGetCommitMessages = vi.fn();
+const mockedDetectCommitPatterns = vi.fn();
+
 vi.mock("@/lib/git", () => ({
-  getCommitMessages: vi.fn(),
-  detectCommitPatterns: vi.fn(),
+  getCommitMessages: (...args: unknown[]) => mockedGetCommitMessages(...args),
+  detectCommitPatterns: (...args: unknown[]) => mockedDetectCommitPatterns(...args),
 }));
 
-vi.mock("@/core/state", async () => {
-  const actual = await vi.importActual<typeof import("@/core/state")>("@/core/state");
-  return {
-    ...actual,
-    StateManager: vi.fn(),
-  };
-});
+vi.mock("@/core/state", () => ({
+  createDefaultState: vi.fn((name: string) => ({
+    version: "0.1.0",
+    project: {
+      name,
+      creatorLevel: null,
+      firstSession: Date.now(),
+      stack: [],
+      focus: undefined,
+      identity: undefined,
+    },
+    journey: {
+      observations: [],
+      milestones: [],
+      sessionCount: 0,
+      lastSession: null,
+    },
+    patterns: [],
+    evolution: {
+      capabilities: [],
+      lastEvolution: null,
+      pendingSuggestions: [],
+      lastObserverRun: null,
+      evolvedDomains: {},
+      instinctIndex: {},
+    },
+    preferences: {
+      suggestionEnabled: true,
+      learningEnabled: true,
+      minPatternCount: 3,
+    },
+    statistics: {
+      totalSessions: 0,
+      totalToolCalls: 0,
+      filesModified: {},
+      lastSessionId: null,
+      toolSequences: [],
+    },
+  })),
+  StateManager: vi.fn(),
+}));
 
 describe("patterns", () => {
   const i18n = createI18n("en-US");
@@ -25,6 +62,8 @@ describe("patterns", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedGetCommitMessages.mockReset();
+    mockedDetectCommitPatterns.mockReset();
     (StateManager as unknown as ReturnType<typeof vi.fn>).mockImplementation(
       function StateManager() {
         return {
@@ -39,10 +78,10 @@ describe("patterns", () => {
   describe("detectPatterns", () => {
     it("detects new commit patterns", async () => {
       const state = createDefaultState("test");
-      vi.mocked(manager.read).mockResolvedValue(state);
+      (manager.read as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(state);
 
-      vi.mocked(getCommitMessages).mockReturnValue(["fix bug", "fix bug", "fix bug"]);
-      vi.mocked(detectCommitPatterns).mockReturnValue(new Map([["fix bug", 3]]));
+      mockedGetCommitMessages.mockReturnValue(["fix bug", "fix bug", "fix bug"]);
+      mockedDetectCommitPatterns.mockReturnValue(new Map([["fix bug", 3]]));
 
       const newPatterns = await detectPatterns({
         stateManager: manager,
@@ -69,10 +108,10 @@ describe("patterns", () => {
         surfaced: false,
         examples: [],
       });
-      vi.mocked(manager.read).mockResolvedValue(state);
+      (manager.read as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(state);
 
-      vi.mocked(getCommitMessages).mockReturnValue(["fix bug"]);
-      vi.mocked(detectCommitPatterns).mockReturnValue(new Map([["fix bug", 3]]));
+      mockedGetCommitMessages.mockReturnValue(["fix bug"]);
+      mockedDetectCommitPatterns.mockReturnValue(new Map([["fix bug", 3]]));
 
       const newPatterns = await detectPatterns({
         stateManager: manager,
@@ -86,9 +125,9 @@ describe("patterns", () => {
     it("detects file patterns", async () => {
       const state = createDefaultState("test");
       state.statistics.filesModified = { "src/main.ts": 5 };
-      vi.mocked(manager.read).mockResolvedValue(state);
+      (manager.read as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(state);
 
-      vi.mocked(detectCommitPatterns).mockReturnValue(new Map());
+      mockedDetectCommitPatterns.mockReturnValue(new Map());
 
       const newPatterns = await detectPatterns({
         stateManager: manager,
@@ -158,7 +197,7 @@ describe("patterns", () => {
           examples: [],
         },
       ];
-      vi.mocked(manager.read).mockResolvedValue(state);
+      (manager.read as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(state);
 
       const suggestions = await surfacePatterns({
         stateManager: manager,
@@ -185,7 +224,7 @@ describe("patterns", () => {
           examples: [],
         },
       ];
-      vi.mocked(manager.read).mockResolvedValue(state);
+      (manager.read as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(state);
 
       const suggestions = await surfacePatterns({
         stateManager: manager,

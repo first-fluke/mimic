@@ -10,23 +10,62 @@ import {
   suggestEvolution,
 } from "@/modules/evolution/engine";
 
+const mockedExistsSync = vi.fn();
+const mockedReadFile = vi.fn();
+const mockedWriteFile = vi.fn();
+const mockedMkdir = vi.fn();
+
 vi.mock("node:fs", () => ({
-  existsSync: vi.fn(),
+  existsSync: (...args: unknown[]) => mockedExistsSync(...args),
 }));
 
 vi.mock("node:fs/promises", () => ({
-  mkdir: vi.fn(),
-  readFile: vi.fn(),
-  writeFile: vi.fn(),
+  mkdir: (...args: unknown[]) => mockedMkdir(...args),
+  readFile: (...args: unknown[]) => mockedReadFile(...args),
+  writeFile: (...args: unknown[]) => mockedWriteFile(...args),
 }));
 
-vi.mock("@/core/state", async () => {
-  const actual = await vi.importActual<typeof import("@/core/state")>("@/core/state");
-  return {
-    ...actual,
-    StateManager: vi.fn(),
-  };
-});
+vi.mock("@/core/state", () => ({
+  createDefaultState: vi.fn((name: string) => ({
+    version: "0.1.0",
+    project: {
+      name,
+      creatorLevel: null,
+      firstSession: Date.now(),
+      stack: [],
+      focus: undefined,
+      identity: undefined,
+    },
+    journey: {
+      observations: [],
+      milestones: [],
+      sessionCount: 0,
+      lastSession: null,
+    },
+    patterns: [],
+    evolution: {
+      capabilities: [],
+      lastEvolution: null,
+      pendingSuggestions: [],
+      lastObserverRun: null,
+      evolvedDomains: {},
+      instinctIndex: {},
+    },
+    preferences: {
+      suggestionEnabled: true,
+      learningEnabled: true,
+      minPatternCount: 3,
+    },
+    statistics: {
+      totalSessions: 0,
+      totalToolCalls: 0,
+      filesModified: {},
+      lastSessionId: null,
+      toolSequences: [],
+    },
+  })),
+  StateManager: vi.fn(),
+}));
 
 describe("evolution", () => {
   const i18n = createI18n("en-US");
@@ -39,6 +78,10 @@ describe("evolution", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedExistsSync.mockReset();
+    mockedReadFile.mockReset();
+    mockedWriteFile.mockReset();
+    mockedMkdir.mockReset();
     (StateManager as unknown as ReturnType<typeof vi.fn>).mockImplementation(
       function StateManager() {
         return {
@@ -178,7 +221,7 @@ describe("evolution", () => {
           examples: [],
         },
       ];
-      vi.mocked(manager.read).mockResolvedValue(state);
+      (manager.read as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(state);
 
       const suggestion = {
         type: "shortcut" as const,
@@ -190,7 +233,7 @@ describe("evolution", () => {
 
       await evolveCapability(makeCtx("/tmp/project"), suggestion);
 
-      expect(writeFile).toHaveBeenCalledWith(
+      expect(mockedWriteFile).toHaveBeenCalledWith(
         expect.stringContaining("my-shortcut.js"),
         expect.stringContaining("export const my_shortcut"),
         "utf-8",
@@ -202,7 +245,7 @@ describe("evolution", () => {
 
     it("creates agent capability and saves markdown file", async () => {
       const state = createDefaultState("test");
-      vi.mocked(manager.read).mockResolvedValue(state);
+      (manager.read as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(state);
 
       const suggestion = {
         type: "agent" as const,
@@ -223,7 +266,7 @@ describe("evolution", () => {
 
       await evolveCapability(makeCtx("/tmp/project"), suggestion);
 
-      expect(writeFile).toHaveBeenCalledWith(
+      expect(mockedWriteFile).toHaveBeenCalledWith(
         expect.stringContaining("my-agent.md"),
         expect.stringContaining("mode: subagent"),
         "utf-8",
@@ -232,9 +275,9 @@ describe("evolution", () => {
 
     it("creates mcp capability and updates opencode.json", async () => {
       const state = createDefaultState("test");
-      vi.mocked(manager.read).mockResolvedValue(state);
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFile).mockResolvedValue(JSON.stringify({ mcp: {} }));
+      (manager.read as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(state);
+      mockedExistsSync.mockReturnValue(true);
+      mockedReadFile.mockResolvedValue(JSON.stringify({ mcp: {} }));
 
       const suggestion = {
         type: "mcp" as const,
@@ -255,7 +298,7 @@ describe("evolution", () => {
 
       await evolveCapability(makeCtx("/tmp/project"), suggestion);
 
-      expect(writeFile).toHaveBeenCalledWith(
+      expect(mockedWriteFile).toHaveBeenCalledWith(
         expect.stringContaining("opencode.json"),
         expect.stringContaining("my-mcp"),
         "utf-8",
@@ -264,9 +307,9 @@ describe("evolution", () => {
 
     it("handles corrupt opencode.json", async () => {
       const state = createDefaultState("test");
-      vi.mocked(manager.read).mockResolvedValue(state);
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFile).mockResolvedValue("invalid-json");
+      (manager.read as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(state);
+      mockedExistsSync.mockReturnValue(true);
+      mockedReadFile.mockResolvedValue("invalid-json");
 
       const suggestion = {
         type: "mcp" as const,
@@ -287,7 +330,7 @@ describe("evolution", () => {
 
       await evolveCapability(makeCtx("/tmp/project"), suggestion);
 
-      expect(writeFile).toHaveBeenCalledWith(
+      expect(mockedWriteFile).toHaveBeenCalledWith(
         expect.stringContaining("opencode.json"),
         expect.stringContaining("my-mcp"),
         "utf-8",
@@ -310,7 +353,7 @@ describe("evolution", () => {
           examples: [],
         },
       ];
-      vi.mocked(manager.read).mockResolvedValue(state);
+      (manager.read as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(state);
 
       const suggestions = await getEvolutionSuggestions(makeCtx());
       expect(suggestions).toHaveLength(1);

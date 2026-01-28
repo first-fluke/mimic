@@ -7,8 +7,10 @@ import {
   getRecentlyModifiedFiles,
 } from "@/lib/git";
 
+const mockedExecSync = vi.fn();
+
 vi.mock("node:child_process", () => ({
-  execSync: vi.fn(),
+  execSync: (...args: unknown[]) => mockedExecSync(...args),
 }));
 
 describe("git", () => {
@@ -24,14 +26,14 @@ describe("git", () => {
 
   describe("commands", () => {
     it("getGitHistory calls git log", () => {
-      vi.mocked(execSync).mockReturnValue("commit1\ncommit2");
+      mockedExecSync.mockReturnValue("commit1\ncommit2");
       const history = getGitHistory("/tmp");
-      expect(execSync).toHaveBeenCalledWith(expect.stringContaining("git log"), expect.any(Object));
+      expect(mockedExecSync).toHaveBeenCalledWith(expect.stringContaining("git log"), expect.any(Object));
       expect(history).toEqual(["commit1", "commit2"]);
     });
 
     it("getGitHistory handles errors", () => {
-      vi.mocked(execSync).mockImplementation(() => {
+      mockedExecSync.mockImplementation(() => {
         throw new Error("git error");
       });
       const history = getGitHistory("/tmp");
@@ -39,9 +41,9 @@ describe("git", () => {
     });
 
     it("getRecentlyModifiedFiles calls git diff", () => {
-      vi.mocked(execSync).mockReturnValue("file1.ts\nfile2.ts");
+      mockedExecSync.mockReturnValue("file1.ts\nfile2.ts");
       const files = getRecentlyModifiedFiles("/tmp");
-      expect(execSync).toHaveBeenCalledWith(
+      expect(mockedExecSync).toHaveBeenCalledWith(
         expect.stringContaining("git diff"),
         expect.any(Object),
       );
@@ -49,7 +51,7 @@ describe("git", () => {
     });
 
     it("getRecentlyModifiedFiles handles errors", () => {
-      vi.mocked(execSync).mockImplementation(() => {
+      mockedExecSync.mockImplementation(() => {
         throw new Error("git error");
       });
       const files = getRecentlyModifiedFiles("/tmp");
@@ -57,9 +59,9 @@ describe("git", () => {
     });
 
     it("getCommitMessages calls git log with format", () => {
-      vi.mocked(execSync).mockReturnValue("msg1\nmsg2");
+      mockedExecSync.mockReturnValue("msg1\nmsg2");
       const msgs = getCommitMessages("/tmp");
-      expect(execSync).toHaveBeenCalledWith(
+      expect(mockedExecSync).toHaveBeenCalledWith(
         expect.stringContaining("git log --format=%s"),
         expect.any(Object),
       );
@@ -67,7 +69,7 @@ describe("git", () => {
     });
 
     it("getCommitMessages handles errors", () => {
-      vi.mocked(execSync).mockImplementation(() => {
+      mockedExecSync.mockImplementation(() => {
         throw new Error("git error");
       });
       const msgs = getCommitMessages("/tmp");
