@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/first-fluke/mimic/compare/opencode-plugin-mimic@v0.1.11...opencode-plugin-mimic@v0.2.0) (2026-01-28)
+
+
+### Features
+
+* add release-please and opencode-plugin-mimic ([9fc2533](https://github.com/first-fluke/mimic/commit/9fc253392f586b9316d45fa5128f3746f7f6f432))
+
 ## [0.1.11](https://github.com/gracefullight/pkgs/compare/opencode-plugin-mimic@0.1.10...opencode-plugin-mimic@0.1.11) (2026-01-27)
 
 
