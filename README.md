@@ -91,8 +91,7 @@ Both implementations follow a **Cognitive Architecture** mimicking human cogniti
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/)
-- Node.js 24+
+- [mise](https://mise.jdx.dev/)
 
 ### Setup
 
@@ -101,8 +100,11 @@ Both implementations follow a **Cognitive Architecture** mimicking human cogniti
 git clone https://github.com/mimic-agent/mimic.git
 cd mimic
 
-# Install root dependencies
-npm install
+# Install tools (Node.js 24, Bun)
+mise install
+
+# Install dependencies
+bun install
 ```
 
 ### VS Code Extension

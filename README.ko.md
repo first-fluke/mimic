@@ -91,8 +91,7 @@
 
 ### 필수 조건
 
-- [Bun](https://bun.sh/)
-- Node.js 24+
+- [mise](https://mise.jdx.dev/)
 
 ### 설정
 
@@ -101,8 +100,11 @@
 git clone https://github.com/mimic-agent/mimic.git
 cd mimic
 
-# 루트 의존성 설치
-npm install
+# 도구 설치 (Node.js 24, Bun)
+mise install
+
+# 의존성 설치
+bun install
 ```
 
 ### VS Code 확장 프로그램
