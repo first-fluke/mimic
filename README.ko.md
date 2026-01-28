@@ -154,5 +154,19 @@ pnpm run typecheck
 MIT License - 자유롭게 수정하고 배포할 수 있습니다.
 
 <p align="center">
-  Made with ❤️ by the MIMIC Team
+  Made with ❤️ by the First Fluke
 </p>
+
+---
+
+## 스폰서
+
+이 프로젝트가 도움이 되었다면, 커피 한 잔을 후원해 주세요!
+
+<a href="https://www.buymeacoffee.com/firstfluke" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
+또는 스타를 남겨주세요:
+
+```bash
+gh api --method PUT /user/starred/first-fluke/mimic
+```
