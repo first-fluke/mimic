@@ -47,6 +47,10 @@ export class ActivityWatcher implements vscode.Disposable {
     this.eventsPath = eventsPath;
     this.outputChannel = outputChannel;
     this.insightService = insightService;
+
+    // Register EventEmitters for proper disposal
+    this.disposables.push(this._onDidDetectError);
+    this.disposables.push(this._onDidDetectEvent);
   }
 
   public async start(): Promise<void> {
@@ -126,8 +130,40 @@ export class ActivityWatcher implements vscode.Disposable {
           `[ActivityWatcher] 🔄 Log Rotated: ${this.eventsPath} -> ${backupPath}`,
         );
       }
+
+      // Clean up old backup files (older than 30 days)
+      await this.cleanOldBackups();
     } catch (_e) {
       // Ignore if file doesn't exist or error
+    }
+  }
+
+  private async cleanOldBackups(): Promise<void> {
+    try {
+      const dir = path.dirname(this.eventsPath);
+      const files = await fs.promises.readdir(dir);
+      const now = Date.now();
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
+      for (const file of files) {
+        if (!file.startsWith('events.') || !file.endsWith('.jsonl')) continue;
+        if (file === 'events.jsonl') continue;
+
+        const filePath = path.join(dir, file);
+        try {
+          const fileStat = await fs.promises.stat(filePath);
+          if (now - fileStat.mtimeMs > thirtyDaysMs) {
+            await fs.promises.unlink(filePath);
+            this.outputChannel.appendLine(
+              `[ActivityWatcher] 🗑️ Deleted old backup: ${file}`,
+            );
+          }
+        } catch {
+          // Ignore individual file errors
+        }
+      }
+    } catch {
+      // Ignore cleanup errors
     }
   }
 

@@ -318,17 +318,22 @@ export class SynthesisService {
         );
 
         const messages = [vscode.LanguageModelChatMessage.User(prompt)];
-        const response = await model.sendRequest(
-          messages,
-          {},
-          new vscode.CancellationTokenSource().token,
-        );
+        const cts = new vscode.CancellationTokenSource();
+        try {
+          const response = await model.sendRequest(
+            messages,
+            {},
+            cts.token,
+          );
 
-        let result = '';
-        for await (const chunk of response.text) {
-          result += chunk;
+          let result = '';
+          for await (const chunk of response.text) {
+            result += chunk;
+          }
+          return result;
+        } finally {
+          cts.dispose();
         }
-        return result;
       }
     } catch (error) {
       this.outputChannel.appendLine(

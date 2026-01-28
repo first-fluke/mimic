@@ -13,12 +13,37 @@ interface CommandFrequency {
   lastUsed: number;
 }
 
-export class QuickActionService {
+async function readTailBytes(filePath: string, maxBytes: number): Promise<string> {
+  const fd = await fs.promises.open(filePath, 'r');
+  try {
+    const stats = await fd.stat();
+    const start = Math.max(0, stats.size - maxBytes);
+    const buf = Buffer.alloc(Math.min(stats.size, maxBytes));
+    await fd.read(buf, 0, buf.length, start);
+    let content = buf.toString('utf-8');
+    if (start > 0) {
+      const firstNewline = content.indexOf('\n');
+      if (firstNewline !== -1) {
+        content = content.slice(firstNewline + 1);
+      }
+    }
+    return content;
+  } finally {
+    await fd.close();
+  }
+}
+
+export class QuickActionService implements vscode.Disposable {
   private readonly eventsPath: string;
   private readonly ignoredPath: string;
   private outputChannel: vscode.OutputChannel;
   private ignoredCommands: Set<string>;
   private ignoredPatterns: string[] = [];
+  private readonly configDisposable: vscode.Disposable;
+
+  // Cache for parsed events
+  private cachedEvents: Array<{ cmd: string; ts?: number }> | null = null;
+  private fileWatcher: fs.FSWatcher | null = null;
 
   constructor(outputChannel: vscode.OutputChannel, eventsPath?: string) {
     const mimicDir = path.join(os.homedir(), '.mimic');
@@ -29,12 +54,27 @@ export class QuickActionService {
     this.loadIgnoredCommands();
     this.loadIgnoredPatterns();
 
-    // Reload on config change
-    vscode.workspace.onDidChangeConfiguration((e) => {
+    // Reload on config change (store disposable)
+    this.configDisposable = vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('mimic.ignoredPatterns')) {
         this.loadIgnoredPatterns();
       }
     });
+
+    // Watch events file for cache invalidation
+    this.setupFileWatcher();
+  }
+
+  private setupFileWatcher(): void {
+    try {
+      if (fs.existsSync(this.eventsPath)) {
+        this.fileWatcher = fs.watch(this.eventsPath, () => {
+          this.cachedEvents = null;
+        });
+      }
+    } catch {
+      // Ignore watch errors
+    }
   }
 
   private loadIgnoredPatterns() {
@@ -164,18 +204,41 @@ export class QuickActionService {
   }
 
   /**
-   * Read events from the JSONL file.
+   * Read events from the JSONL file (cached, tail-read).
    */
   private readEvents(): Array<{ cmd: string; ts?: number }> {
+    if (this.cachedEvents) {
+      return this.cachedEvents;
+    }
+
     if (!fs.existsSync(this.eventsPath)) {
       return [];
     }
 
     try {
-      const content = fs.readFileSync(this.eventsPath, 'utf-8');
+      // Read last 512KB of the file synchronously for sidebar performance
+      const stats = fs.statSync(this.eventsPath);
+      const maxBytes = 512 * 1024;
+      const start = Math.max(0, stats.size - maxBytes);
+      const readSize = Math.min(stats.size, maxBytes);
+      const buf = Buffer.alloc(readSize);
+      const fd = fs.openSync(this.eventsPath, 'r');
+      try {
+        fs.readSync(fd, buf, 0, readSize, start);
+      } finally {
+        fs.closeSync(fd);
+      }
+      let content = buf.toString('utf-8');
+      if (start > 0) {
+        const firstNewline = content.indexOf('\n');
+        if (firstNewline !== -1) {
+          content = content.slice(firstNewline + 1);
+        }
+      }
+
       const lines = content.split('\n').filter((line) => line.trim());
 
-      return lines
+      const events = lines
         .map((line) => {
           try {
             return JSON.parse(line);
@@ -184,6 +247,9 @@ export class QuickActionService {
           }
         })
         .filter(Boolean);
+
+      this.cachedEvents = events;
+      return events;
     } catch {
       return [];
     }
@@ -259,5 +325,14 @@ export class QuickActionService {
         return b.lastUsed - a.lastUsed;
       })
       .slice(0, limit);
+  }
+
+  public dispose(): void {
+    this.configDisposable.dispose();
+    if (this.fileWatcher) {
+      this.fileWatcher.close();
+      this.fileWatcher = null;
+    }
+    this.cachedEvents = null;
   }
 }

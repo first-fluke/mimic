@@ -360,10 +360,10 @@ async function sendToModel(
     `[AnalystService] Sending request to model: ${model.name} (${model.id})...`,
   );
 
+  const cts = new vscode.CancellationTokenSource();
   try {
     const messages = [vscode.LanguageModelChatMessage.User(prompt)];
-    const cancellationToken = new vscode.CancellationTokenSource().token;
-    const response = await model.sendRequest(messages, {}, cancellationToken);
+    const response = await model.sendRequest(messages, {}, cts.token);
 
     let result = '';
     for await (const chunk of response.text) {
@@ -381,6 +381,8 @@ async function sendToModel(
       `[AnalystService] Error during model request: ${err}`,
     );
     throw err;
+  } finally {
+    cts.dispose();
   }
 }
 
@@ -503,6 +505,26 @@ interface PatternData {
   lastContext_cwd: string;
 }
 
+async function readTailBytes(filePath: string, maxBytes: number): Promise<string> {
+  const fd = await fs.promises.open(filePath, 'r');
+  try {
+    const stats = await fd.stat();
+    const start = Math.max(0, stats.size - maxBytes);
+    const buf = Buffer.alloc(Math.min(stats.size, maxBytes));
+    await fd.read(buf, 0, buf.length, start);
+    let content = buf.toString('utf-8');
+    if (start > 0) {
+      const firstNewline = content.indexOf('\n');
+      if (firstNewline !== -1) {
+        content = content.slice(firstNewline + 1);
+      }
+    }
+    return content;
+  } finally {
+    await fd.close();
+  }
+}
+
 async function getRecentPatterns(workspacePath?: string): Promise<object[]> {
   const eventsPath = path.join(os.homedir(), '.mimic', 'events.jsonl');
 
@@ -511,8 +533,9 @@ async function getRecentPatterns(workspacePath?: string): Promise<object[]> {
   }
 
   try {
-    // Read file content and process lines
-    const content = fs.readFileSync(eventsPath, 'utf-8');
+    // Read last 512KB of the file to avoid loading the entire file
+    const maxBytes = 512 * 1024;
+    const content = await readTailBytes(eventsPath, maxBytes);
     const lines = content.split('\n').filter((line) => line.trim());
 
     // We want to analyze a reasonable window of recent history.

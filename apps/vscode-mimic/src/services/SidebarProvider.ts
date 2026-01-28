@@ -18,6 +18,7 @@ export class SidebarProvider
   >();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
+  private outputChannel: vscode.OutputChannel;
   private watcher: ActivityWatcher | null = null;
   private quickActionService: QuickActionService | null = null;
   private quotaCache: QuotaSnapshot | null = null;

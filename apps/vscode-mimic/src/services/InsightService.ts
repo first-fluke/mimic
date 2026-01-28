@@ -47,7 +47,27 @@ interface _InsightMetadata {
   createdAt: string;
 }
 
-export class InsightService {
+async function readTailBytes(filePath: string, maxBytes: number): Promise<string> {
+  const fd = await fs.promises.open(filePath, 'r');
+  try {
+    const stats = await fd.stat();
+    const start = Math.max(0, stats.size - maxBytes);
+    const buf = Buffer.alloc(Math.min(stats.size, maxBytes));
+    await fd.read(buf, 0, buf.length, start);
+    let content = buf.toString('utf-8');
+    if (start > 0) {
+      const firstNewline = content.indexOf('\n');
+      if (firstNewline !== -1) {
+        content = content.slice(firstNewline + 1);
+      }
+    }
+    return content;
+  } finally {
+    await fd.close();
+  }
+}
+
+export class InsightService implements vscode.Disposable {
   private readonly insightsDir: string;
   private readonly eventsPath: string;
   private outputChannel: vscode.OutputChannel;
@@ -181,24 +201,29 @@ export class InsightService {
         );
 
         const messages = [vscode.LanguageModelChatMessage.User(prompt)];
-        const response = await model.sendRequest(
-          messages,
-          {},
-          new vscode.CancellationTokenSource().token,
-        );
+        const cts = new vscode.CancellationTokenSource();
+        try {
+          const response = await model.sendRequest(
+            messages,
+            {},
+            cts.token,
+          );
 
-        let result = '';
-        for await (const chunk of response.text) {
-          result += chunk;
+          let result = '';
+          for await (const chunk of response.text) {
+            result += chunk;
+          }
+
+          // Extra cleanup: Remove markdown code fences if model wrapped response in them
+          result = result
+            .replace(/^```markdown\n/, '')
+            .replace(/^```\n/, '')
+            .replace(/\n```$/, '');
+
+          return result;
+        } finally {
+          cts.dispose();
         }
-
-        // Extra cleanup: Remove markdown code fences if model wrapped response in them
-        result = result
-          .replace(/^```markdown\n/, '')
-          .replace(/^```\n/, '')
-          .replace(/\n```$/, '');
-
-        return result;
       } else {
         this.outputChannel.appendLine(
           '[InsightService] Native LM failed: No models found after retries.',
@@ -337,7 +362,7 @@ export class InsightService {
   }
 
   /**
-   * Get recent events from the JSONL log file.
+   * Get recent events from the JSONL log file (tail-read for efficiency).
    */
   private async getRecentEvents(count: number): Promise<object[]> {
     if (!fs.existsSync(this.eventsPath)) {
@@ -345,10 +370,9 @@ export class InsightService {
     }
 
     try {
-      // Optimization: Read mainly the end of the file
-      // For now, let's keep it simple with async readFile.
-      // Future improvement: Read only last N KB using fs.open + fs.read
-      const content = await fs.promises.readFile(this.eventsPath, 'utf-8');
+      // Read last 256KB to get recent events without loading the entire file
+      const maxBytes = 256 * 1024;
+      const content = await readTailBytes(this.eventsPath, maxBytes);
       const lines = content.split('\n').filter((line) => line.trim());
       const recentLines = lines.slice(-count);
 
@@ -396,5 +420,13 @@ export class InsightService {
    */
   public getInsightsDir(): string {
     return this.insightsDir;
+  }
+
+  public dispose(): void {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+    this._onDidStartAnalysis.dispose();
+    this._onDidEndAnalysis.dispose();
   }
 }

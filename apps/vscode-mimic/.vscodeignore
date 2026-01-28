@@ -1,25 +1,8 @@
-# VSIX files
-*.vsix
-
-# Source files (we only need compiled JS in out/)
-src/
-
-# Development files
-.vscode/
-.git/
-.gitignore
-node_modules/
-tsconfig.json
-
-# Documentation (optional in production)
-docs/
-
-# Test files
-**/*.test.ts
-**/*.spec.ts
-tests/
-
-# Other
-.DS_Store
-*.log
-
+*
+!out/**
+!resources/**
+!package.json
+!README.md
+!README.ko.md
+!LICENSE.txt
+!mise.toml

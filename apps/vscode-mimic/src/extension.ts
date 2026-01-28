@@ -30,11 +30,13 @@ export async function activate(context: vscode.ExtensionContext) {
   await installer.checkGitignore();
 
   // Monitor Config Changes
-  vscode.workspace.onDidChangeConfiguration(async (e) => {
-    if (e.affectsConfiguration('mimic.enableRealtimePerception')) {
-      await installer.manageHook();
-    }
-  });
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(async (e) => {
+      if (e.affectsConfiguration('mimic.enableRealtimePerception')) {
+        await installer.manageHook();
+      }
+    }),
+  );
 
   // Register manual install command
   const installHookCommand = vscode.commands.registerCommand(
@@ -97,15 +99,22 @@ export async function activate(context: vscode.ExtensionContext) {
   );
   sidebarProvider.setWatcher(activityWatcher);
   sidebarProvider.setQuickActionService(quickActionService);
-  sidebarProvider.setWatcher(activityWatcher);
-  sidebarProvider.setQuickActionService(quickActionService);
   vscode.window.registerTreeDataProvider('mimic-tree-view', sidebarProvider);
 
   // Refresh sidebar periodically (UI update)
-  setInterval(() => sidebarProvider.refresh(), 5000);
+  const uiRefreshInterval = setInterval(() => sidebarProvider.refresh(), 5000);
+  context.subscriptions.push({
+    dispose: () => clearInterval(uiRefreshInterval),
+  });
 
   // Refresh Quota periodically (every 60s)
-  setInterval(() => sidebarProvider.refreshQuota(), 60000);
+  const quotaRefreshInterval = setInterval(
+    () => sidebarProvider.refreshQuota(),
+    60000,
+  );
+  context.subscriptions.push({
+    dispose: () => clearInterval(quotaRefreshInterval),
+  });
 
   // Initial Quota fetch using the bridge instance
   sidebarProvider.refreshQuota();
@@ -408,10 +417,11 @@ export async function activate(context: vscode.ExtensionContext) {
     loginAntigravityCommand,
     openSettingsCommand,
     switchAntigravityAccountCommand,
-    switchAntigravityAccountCommand,
     refreshQuotaCommand,
     refreshSidebarCommand,
     activityWatcher,
+    insightService,
+    quickActionService,
     outputChannel,
   );
   outputChannel.appendLine('MIMIC: Ready. ✨');
