@@ -198,6 +198,17 @@ export class ObservationLog {
       return [];
     }
 
+    // If only recent entries are needed, read file from end to avoid loading entire file
+    const limit = options.limit;
+    const needsReverseChronological = true; // We always sort by timestamp descending
+    
+    // For small limits, use efficient tail reading instead of loading entire file
+    if (limit && limit > 0 && limit <= 1000) {
+      const entries = await this.readLastNLines(limit * 2); // Read extra to account for filtering
+      return this.filterAndSortEntries(entries, options);
+    }
+
+    // Fallback: read entire file (for larger queries or when filtering is complex)
     const content = await readFile(this.logPath, "utf-8");
     const lines = content.trim().split("\n").filter(Boolean);
     let entries: ObservationEntry[] = [];
@@ -211,34 +222,98 @@ export class ObservationLog {
       }
     }
 
+    return this.filterAndSortEntries(entries, options);
+  }
+
+  /**
+   * Read last N lines from log file efficiently without loading entire file
+   */
+  private async readLastNLines(n: number): Promise<ObservationEntry[]> {
+    const stats = await stat(this.logPath);
+    const fileSize = stats.size;
+    
+    // Start with a reasonable buffer size (e.g., average 500 bytes per line)
+    let bufferSize = Math.min(n * 500, fileSize);
+    let buffer = Buffer.alloc(0);
+    let position = fileSize;
+    
+    while (position > 0 && buffer.toString("utf-8").split("\n").filter(Boolean).length < n) {
+      const chunkSize = Math.min(bufferSize, position);
+      position -= chunkSize;
+      
+      const chunk = await this.readFileChunk(position, chunkSize);
+      buffer = Buffer.concat([chunk, buffer]);
+      
+      // Increase buffer size for next iteration if needed
+      bufferSize *= 2;
+    }
+
+    const lines = buffer.toString("utf-8").split("\n").filter(Boolean);
+    const entries: ObservationEntry[] = [];
+
+    for (const line of lines.slice(-n)) {
+      try {
+        const entry = JSON.parse(line) as ObservationEntry;
+        entries.push(entry);
+      } catch {
+        // Skip malformed lines
+      }
+    }
+
+    return entries;
+  }
+
+  /**
+   * Read a chunk of the file at specified position
+   */
+  private async readFileChunk(position: number, length: number): Promise<Buffer> {
+    const fs = await import("node:fs");
+    const fd = fs.openSync(this.logPath, "r");
+    try {
+      const buffer = Buffer.alloc(length);
+      fs.readSync(fd, buffer, 0, length, position);
+      return buffer;
+    } finally {
+      fs.closeSync(fd);
+    }
+  }
+
+  /**
+   * Filter and sort entries based on query options
+   */
+  private filterAndSortEntries(
+    entries: ObservationEntry[],
+    options: ObservationQuery,
+  ): ObservationEntry[] {
     // Apply filters
-    const filterTypes = options.types;
-    if (filterTypes && filterTypes.length > 0) {
-      entries = entries.filter((e) => filterTypes.includes(e.type));
+    let filtered = entries;
+
+    if (options.types && options.types.length > 0) {
+      filtered = filtered.filter((e) => options.types!.includes(e.type));
     }
 
     if (options.sessionId) {
-      entries = entries.filter((e) => e.sessionId === options.sessionId);
+      filtered = filtered.filter((e) => e.sessionId === options.sessionId);
     }
 
     if (options.startDate) {
       const start = options.startDate.getTime();
-      entries = entries.filter((e) => new Date(e.timestamp).getTime() >= start);
+      filtered = filtered.filter((e) => new Date(e.timestamp).getTime() >= start);
     }
 
     if (options.endDate) {
       const end = options.endDate.getTime();
-      entries = entries.filter((e) => new Date(e.timestamp).getTime() <= end);
+      filtered = filtered.filter((e) => new Date(e.timestamp).getTime() <= end);
     }
 
     // Sort by timestamp descending (most recent first)
-    entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     if (options.limit && options.limit > 0) {
-      entries = entries.slice(0, options.limit);
+      filtered = filtered.slice(0, options.limit);
     }
 
-    return entries;
+    return filtered;
   }
 
   /**
@@ -290,7 +365,44 @@ export class ObservationLog {
     // Clear current log
     await writeFile(this.logPath, "", "utf-8");
 
+    // Clean up old archives to prevent disk bloat (keep last 10)
+    await this.cleanupOldArchives(10);
+
     return true;
+  }
+
+  /**
+   * Clean up old archive files, keeping only the most recent N
+   */
+  private async cleanupOldArchives(keepCount: number): Promise<void> {
+    try {
+      const { readdir, unlink } = await import("node:fs/promises");
+      const files = await readdir(this.archiveDir);
+
+      // Filter for observation archive files and get their stats
+      const archiveFiles: { name: string; mtime: Date }[] = [];
+      for (const file of files) {
+        if (file.startsWith("observations-") && file.endsWith(".jsonl")) {
+          const filePath = join(this.archiveDir, file);
+          const stats = await stat(filePath);
+          archiveFiles.push({ name: file, mtime: stats.mtime });
+        }
+      }
+
+      // Sort by modification time (oldest first)
+      archiveFiles.sort((a, b) => a.mtime.getTime() - b.mtime.getTime());
+
+      // Delete old archives if we have more than keepCount
+      if (archiveFiles.length > keepCount) {
+        const toDelete = archiveFiles.slice(0, archiveFiles.length - keepCount);
+        for (const archive of toDelete) {
+          const filePath = join(this.archiveDir, archive.name);
+          await unlink(filePath);
+        }
+      }
+    } catch {
+      // Ignore cleanup errors - don't let cleanup failures break rotation
+    }
   }
 
   /**

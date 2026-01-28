@@ -45,6 +45,20 @@ export const mimic: Plugin = async ({ directory, client }) => {
   const filesEdited: Set<string> = new Set();
   let currentBranch: string | undefined;
 
+  // Maximum number of tool calls to keep in memory per session
+  const MAX_TOOL_CALLS_MEMORY = 1000;
+
+  /**
+   * Add tool call with memory limit enforcement
+   */
+  const addToolCall = (toolCall: ToolCall): void => {
+    toolCalls.push(toolCall);
+    // Keep only recent tool calls to prevent memory bloat in long sessions
+    if (toolCalls.length > MAX_TOOL_CALLS_MEMORY) {
+      toolCalls.splice(0, toolCalls.length - MAX_TOOL_CALLS_MEMORY);
+    }
+  };
+
   const handleSessionCreated = async () => {
     // Initialize identity on first session
     await stateManager.initializeIdentity();
@@ -303,7 +317,7 @@ export const mimic: Plugin = async ({ directory, client }) => {
         timestamp: Date.now(),
       };
 
-      toolCalls.push(toolCall);
+      addToolCall(toolCall);
       state.statistics.totalToolCalls += 1;
 
       // Log to observation log

@@ -107,7 +107,36 @@ export class StateManager {
     if (!existsSync(this.statePath)) {
       await this.initialize();
     }
-    return JSON.parse(await readFile(this.statePath, "utf-8"));
+    const state = JSON.parse(await readFile(this.statePath, "utf-8")) as State;
+    // Clean up patterns if they exceed the limit
+    return this.cleanupState(state);
+  }
+
+  /**
+   * Clean up state to prevent unbounded growth
+   */
+  private cleanupState(state: State): State {
+    const MAX_PATTERNS = 500;
+    const MAX_FILES_MODIFIED = 200;
+
+    // Clean up patterns: keep most recent/frequent ones
+    if (state.patterns.length > MAX_PATTERNS) {
+      // Sort by lastSeen (most recent first) and keep top MAX_PATTERNS
+      state.patterns.sort((a, b) => b.lastSeen - a.lastSeen);
+      state.patterns = state.patterns.slice(0, MAX_PATTERNS);
+    }
+
+    // Clean up filesModified: keep most frequently modified files
+    const filesModified = state.statistics.filesModified;
+    const entries = Object.entries(filesModified);
+    if (entries.length > MAX_FILES_MODIFIED) {
+      // Sort by count (highest first) and keep top MAX_FILES_MODIFIED
+      entries.sort((a, b) => b[1] - a[1]);
+      const topEntries = entries.slice(0, MAX_FILES_MODIFIED);
+      state.statistics.filesModified = Object.fromEntries(topEntries);
+    }
+
+    return state;
   }
 
   async save(state: State): Promise<void> {
@@ -135,6 +164,10 @@ export class StateManager {
       milestone,
       timestamp: new Date().toISOString(),
     });
+    // Keep only the last 100 milestones to prevent unbounded growth
+    if (state.journey.milestones.length > 100) {
+      state.journey.milestones = state.journey.milestones.slice(-100);
+    }
     await this.save(state);
   }
 
