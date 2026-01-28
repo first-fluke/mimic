@@ -97,10 +97,15 @@ export async function activate(context: vscode.ExtensionContext) {
   );
   sidebarProvider.setWatcher(activityWatcher);
   sidebarProvider.setQuickActionService(quickActionService);
-  vscode.window.registerTreeDataProvider('mimic-view', sidebarProvider);
+  sidebarProvider.setWatcher(activityWatcher);
+  sidebarProvider.setQuickActionService(quickActionService);
+  vscode.window.registerTreeDataProvider('mimic-tree-view', sidebarProvider);
 
-  // Refresh sidebar periodically
+  // Refresh sidebar periodically (UI update)
   setInterval(() => sidebarProvider.refresh(), 5000);
+
+  // Refresh Quota periodically (every 60s)
+  setInterval(() => sidebarProvider.refreshQuota(), 60000);
 
   // Initial Quota fetch using the bridge instance
   sidebarProvider.refreshQuota();
