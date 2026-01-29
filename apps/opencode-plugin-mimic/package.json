@@ -48,6 +48,7 @@
   "dependencies": {
     "@opencode-ai/plugin": "latest",
     "@opencode-ai/sdk": "latest",
+    "better-all": "^0.0.5",
     "date-fns": "^4.1.0",
     "nanoid": "^5.1.6"
   },

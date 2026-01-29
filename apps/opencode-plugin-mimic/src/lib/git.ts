@@ -1,42 +1,42 @@
-import { execSync } from "node:child_process";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 
-export function getGitHistory(directory: string, limit = 50): string[] {
+const execAsync = promisify(exec);
+
+export async function getGitHistory(directory: string, limit = 50): Promise<string[]> {
   try {
-    const result = execSync(`git log --oneline -n ${limit}`, {
+    const { stdout } = await execAsync(`git log --oneline -n ${limit}`, {
       cwd: directory,
       encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
     });
-    return result.trim().split("\n").filter(Boolean);
+    return stdout.trim().split("\n").filter(Boolean);
   } catch {
     return [];
   }
 }
 
-export function getRecentlyModifiedFiles(directory: string): string[] {
+export async function getRecentlyModifiedFiles(directory: string): Promise<string[]> {
   try {
-    const result = execSync(
+    const { stdout } = await execAsync(
       "git diff --name-only HEAD~10 HEAD 2>/dev/null || git diff --name-only",
       {
         cwd: directory,
         encoding: "utf-8",
-        stdio: ["pipe", "pipe", "pipe"],
       },
     );
-    return result.trim().split("\n").filter(Boolean);
+    return stdout.trim().split("\n").filter(Boolean);
   } catch {
     return [];
   }
 }
 
-export function getCommitMessages(directory: string, limit = 20): string[] {
+export async function getCommitMessages(directory: string, limit = 20): Promise<string[]> {
   try {
-    const result = execSync(`git log --format=%s -n ${limit}`, {
+    const { stdout } = await execAsync(`git log --format=%s -n ${limit}`, {
       cwd: directory,
       encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
     });
-    return result.trim().split("\n").filter(Boolean);
+    return stdout.trim().split("\n").filter(Boolean);
   } catch {
     return [];
   }
@@ -51,36 +51,34 @@ export function detectCommitPatterns(messages: string[]): Map<string, number> {
   return patterns;
 }
 
-export function getGitDiff(directory: string): string {
+export async function getGitDiff(directory: string): Promise<string> {
   try {
-    const stagedDiff = execSync("git diff --cached", {
+    const { stdout: stagedDiff } = await execAsync("git diff --cached", {
       cwd: directory,
       encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
+    });
 
-    if (stagedDiff.length > 0) {
-      return stagedDiff;
+    if (stagedDiff.trim().length > 0) {
+      return stagedDiff.trim();
     }
 
-    return execSync("git diff", {
+    const { stdout } = await execAsync("git diff", {
       cwd: directory,
       encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
+    });
+    return stdout.trim();
   } catch {
     return "";
   }
 }
 
-export function getStagedFiles(directory: string): string[] {
+export async function getStagedFiles(directory: string): Promise<string[]> {
   try {
-    const result = execSync("git diff --cached --name-only", {
+    const { stdout } = await execAsync("git diff --cached --name-only", {
       cwd: directory,
       encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
     });
-    return result.trim().split("\n").filter(Boolean);
+    return stdout.trim().split("\n").filter(Boolean);
   } catch {
     return [];
   }
