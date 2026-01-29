@@ -6,7 +6,9 @@
 	],
 	"scripts": {
 		"dashboard": "bash scripts/dashboard.sh",
-		"dashboard:web": "node scripts/dashboard-web/server.js"
+		"dashboard:web": "node scripts/dashboard-web/server.js",
+		"test": "bun --filter '*' test",
+		"test:watch": "bun --filter '*' test --watch"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.12"
