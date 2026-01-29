@@ -13,3 +13,5 @@ coverage/
 # Serena Memory (runtime orchestrator state)
 .serena/memories/*
 !.serena/memories/.gitkeep
+
+.opencode/mimic/
