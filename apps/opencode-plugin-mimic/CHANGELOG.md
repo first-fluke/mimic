@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/first-fluke/mimic/compare/opencode-plugin-mimic@v0.2.1...opencode-plugin-mimic@v0.3.0) (2026-01-29)
+
+
+### Features
+
+* add version notification on session start ([f74bec2](https://github.com/first-fluke/mimic/commit/f74bec219924035b82412b82875a5aed67ee17e9))
+
 ## [0.2.1](https://github.com/first-fluke/mimic/compare/opencode-plugin-mimic@v0.2.0...opencode-plugin-mimic@v0.2.1) (2026-01-28)
 
 
