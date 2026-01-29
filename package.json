@@ -4,7 +4,15 @@
 	"workspaces": [
 		"apps/*"
 	],
+	"scripts": {
+		"dashboard": "bash scripts/dashboard.sh",
+		"dashboard:web": "node scripts/dashboard-web/server.js"
+	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.12"
+	},
+	"dependencies": {
+		"chokidar": "^4.0.0",
+		"ws": "^8.18.0"
 	}
 }

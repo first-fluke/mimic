@@ -9,3 +9,7 @@ coverage/
 .mimic_backup/
 *.log
 .env
+
+# Serena Memory (runtime orchestrator state)
+.serena/memories/*
+!.serena/memories/.gitkeep
