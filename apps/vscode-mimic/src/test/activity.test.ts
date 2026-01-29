@@ -1,9 +1,39 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import * as vscode from 'vscode'; // Mocked
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActivityWatcher } from '../services/ActivityWatcher';
+
+// Mock vscode module
+class EventEmitter {
+  event = vi.fn(() => ({ dispose: vi.fn() }));
+  fire = vi.fn();
+}
+
+const vscode = {
+  window: {
+    createOutputChannel: vi.fn(() => ({
+      name: 'MIMIC-Test',
+      append: vi.fn(),
+      appendLine: vi.fn((msg: string) => console.log(msg)),
+      replace: vi.fn(),
+      clear: vi.fn(),
+      show: vi.fn(),
+      hide: vi.fn(),
+      dispose: vi.fn(),
+    })),
+  },
+  workspace: {
+    workspaceFolders: [{ uri: { fsPath: process.cwd() } }],
+    getConfiguration: vi.fn(() => ({
+      get: vi.fn(),
+      update: vi.fn(),
+    })),
+    onDidChangeConfiguration: vi.fn(() => ({ dispose: vi.fn() })),
+  },
+  ExtensionContext: class {},
+  EventEmitter,
+};
 
 describe('ActivityWatcher Integration Test', () => {
   const tempDir = path.join(os.tmpdir(), 'mimic-test-env');
