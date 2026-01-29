@@ -25,7 +25,7 @@ export const createErrorLearningTools: ToolFactory = (ctx) => {
         const lines = [i18n.t("error.suggest_title")];
         for (const fix of fixes) {
           lines.push("");
-          lines.push(`**${fix.description}**`);
+          lines.push(`${fix.description}`);
           lines.push(
             i18n.t("error.fix_confidence", { confidence: Math.round(fix.confidence * 100) }),
           );
@@ -62,7 +62,7 @@ export const createErrorLearningTools: ToolFactory = (ctx) => {
         const lines = [i18n.t("error.patterns_title", { count: filtered.length })];
         for (const pattern of filtered.slice(0, 10)) {
           lines.push("");
-          lines.push(`**[${pattern.errorType}]** ${pattern.errorSignature}`);
+          lines.push(`[${pattern.errorType}] ${pattern.errorSignature}`);
           lines.push(`- Occurrences: ${pattern.occurrences}`);
           lines.push(`- Fixes learned: ${pattern.fixes.length}`);
           lines.push(`- Last seen: ${pattern.lastSeen}`);

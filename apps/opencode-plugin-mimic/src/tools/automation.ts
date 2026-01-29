@@ -66,7 +66,7 @@ export const createAutomationTools: ToolFactory = (ctx) => {
         for (const obs of observations.slice(0, 20)) {
           const time = new Date(obs.timestamp).toLocaleTimeString();
           const data = JSON.stringify(obs.data).slice(0, 60);
-          output += `- \`${time}\` **${obs.type}**: ${data}...\n`;
+          output += `- \`${time}\` ${obs.type}: ${data}...\n`;
         }
 
         return output;
@@ -106,7 +106,7 @@ export const createAutomationTools: ToolFactory = (ctx) => {
         // Continuity hints
         const hints = await sessionMemory.getContinuityHints();
         if (hints.length > 0) {
-          output += "**Hints for this session:**\n";
+          output += "Hints for this session:\n";
           for (const hint of hints) {
             output += `- ${hint}\n`;
           }
@@ -135,8 +135,8 @@ export const createAutomationTools: ToolFactory = (ctx) => {
 
         for (const skill of skills) {
           output += `### 📚 ${skill.name}\n`;
-          output += `- **Domain**: ${skill.metadata.domain}\n`;
-          output += `- **Path**: \`${skill.path}\`\n\n`;
+          output += `- Domain: ${skill.metadata.domain}\n`;
+          output += `- Path: \`${skill.path}\`\n\n`;
         }
 
         return output;

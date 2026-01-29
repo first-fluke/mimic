@@ -1,3 +1,4 @@
+import { all } from "better-all";
 import { BUILTIN_TOOLS } from "@/constants/tools";
 import type { MimicContext } from "@/core/context";
 import { detectCommitPatterns, getCommitMessages } from "@/lib/git";
@@ -8,7 +9,7 @@ export async function detectPatterns(ctx: MimicContext): Promise<Pattern[]> {
   const state = await ctx.stateManager.read();
   const newPatterns: Pattern[] = [];
 
-  const commitMessages = getCommitMessages(ctx.directory);
+  const commitMessages = await getCommitMessages(ctx.directory);
   const commitPatterns = detectCommitPatterns(commitMessages);
   for (const [msg, count] of commitPatterns) {
     if (count >= 3) {

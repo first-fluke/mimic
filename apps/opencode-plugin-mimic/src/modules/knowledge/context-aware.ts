@@ -209,11 +209,11 @@ export function formatContextSummary(
   lines.push("");
 
   if (context.currentFile) {
-    lines.push(`**${i18n.t("context.current_file")}**: \`${context.currentFile}\``);
+    lines.push(`${i18n.t("context.current_file")}: \`${context.currentFile}\``);
   }
 
   if (context.currentBranch) {
-    lines.push(`**${i18n.t("context.current_branch")}**: \`${context.currentBranch}\``);
+    lines.push(`${i18n.t("context.current_branch")}: \`${context.currentBranch}\``);
   }
 
   lines.push("");
@@ -227,7 +227,7 @@ export function formatContextSummary(
         "●".repeat(Math.round(inst.confidence * 5)) +
         "○".repeat(5 - Math.round(inst.confidence * 5));
       const sourceTag = inst.source === "inherited" ? " 📥" : "";
-      lines.push(`- [${bar}] **${inst.title}**${sourceTag} (${inst.domain})`);
+      lines.push(`- [${bar}] ${inst.title}${sourceTag} (${inst.domain})`);
       lines.push(`  ${inst.description}`);
     }
   } else {

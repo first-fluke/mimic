@@ -158,7 +158,7 @@ function formatInstinctsOutput(instincts: Instinct[]): string {
     for (const instinct of sorted) {
       const confidenceLabel =
         instinct.confidence >= 0.8 ? "strong" : instinct.confidence >= 0.6 ? "moderate" : "weak";
-      sections.push(`- **${instinct.title}** (${confidenceLabel}): ${instinct.description}`);
+      sections.push(`- ${instinct.title} (${confidenceLabel}): ${instinct.description}`);
     }
   }
 
@@ -290,7 +290,7 @@ export async function getContextualInstincts(
   const lines = applicable.map((a) => formatInstinctSuggestion(a, ctx.i18n));
 
   return {
-    context: `**Relevant Instincts:**\n${lines.join("\n")}`,
+    context: `Relevant Instincts:\n${lines.join("\n")}`,
     count: applicable.length,
   };
 }

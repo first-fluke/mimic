@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tool } from "@opencode-ai/plugin";
 import { format } from "date-fns";
+import { all } from "better-all";
 import { getRecentlyModifiedFiles } from "@/lib/git";
 import {
   type CurrentContext,
@@ -53,7 +54,7 @@ export const createInstinctTools: ToolFactory = (ctx) => {
               "●".repeat(Math.round(inst.confidence * 5)) +
               "○".repeat(5 - Math.round(inst.confidence * 5));
             const sourceTag = inst.source === "inherited" ? " 📥" : "";
-            output += `- [${bar}] **${inst.title}**${sourceTag}\n`;
+            output += `- [${bar}] ${inst.title}${sourceTag}\n`;
             output += `  ${inst.description}\n`;
           }
           output += "\n";
@@ -133,7 +134,7 @@ export const createInstinctTools: ToolFactory = (ctx) => {
         const i18n = await i18nPromise;
         const innerCtx = { stateManager, directory, i18n };
         const recentTools = toolCalls.slice(-10).map((t) => t.tool);
-        const recentFiles = getRecentlyModifiedFiles(directory).slice(0, 5);
+        const recentFiles = (await getRecentlyModifiedFiles(directory)).slice(0, 5);
 
         const applicable = await getApplicableInstincts(innerCtx, recentTools, recentFiles);
 
@@ -172,13 +173,13 @@ export const createInstinctTools: ToolFactory = (ctx) => {
         const daysAlive = Math.floor((Date.now() - awakened.getTime()) / (1000 * 60 * 60 * 24));
 
         let output = `${i18n.t("identity.title")}\n\n`;
-        output += `**${i18n.t("identity.personality")}**: ${identity.personality}\n`;
-        output += `**${i18n.t("identity.awakened")}**: ${format(awakened, "yyyy-MM-dd")} (${daysAlive} ${i18n.t("identity.days")})\n`;
-        output += `**${i18n.t("identity.instincts_learned")}**: ${identity.totalInstinctsLearned}\n`;
-        output += `**${i18n.t("identity.evolutions")}**: ${identity.totalEvolutions}\n`;
+        output += `${i18n.t("identity.personality")}: ${identity.personality}\n`;
+        output += `${i18n.t("identity.awakened")}: ${format(awakened, "yyyy-MM-dd")} (${daysAlive} ${i18n.t("identity.days")})\n`;
+        output += `${i18n.t("identity.instincts_learned")}: ${identity.totalInstinctsLearned}\n`;
+        output += `${i18n.t("identity.evolutions")}: ${identity.totalEvolutions}\n`;
 
         if (identity.favoriteDomainsRank.length > 0) {
-          output += `**${i18n.t("identity.favorite_domains")}**: ${identity.favoriteDomainsRank.join(", ")}\n`;
+          output += `${i18n.t("identity.favorite_domains")}: ${identity.favoriteDomainsRank.join(", ")}\n`;
         }
 
         return output;
@@ -199,7 +200,7 @@ export const createInstinctTools: ToolFactory = (ctx) => {
 
         let output = `${i18n.t("sequences.title")}\n\n`;
         for (const seq of sequences.slice(0, 10)) {
-          output += `- **${seq.tools.join(" → ")}** (${seq.count}x)\n`;
+          output += `- ${seq.tools.join(" → ")} (${seq.count}x)\n`;
         }
 
         return output;
@@ -217,7 +218,7 @@ export const createInstinctTools: ToolFactory = (ctx) => {
         const innerCtx = { stateManager, directory, i18n };
 
         const recentTools = toolCalls.slice(-10).map((t) => t.tool);
-        const recentFiles = getRecentlyModifiedFiles(directory).slice(0, 10);
+        const recentFiles = (await getRecentlyModifiedFiles(directory)).slice(0, 10);
 
         const context: CurrentContext = {
           currentFile: args.currentFile,

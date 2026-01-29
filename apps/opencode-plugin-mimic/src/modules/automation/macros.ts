@@ -31,15 +31,15 @@ export function recordStep(
 
 export function formatMacroForDisplay(macro: Macro, i18n: I18n): string {
   let output = `### 📼 ${macro.name}\n\n`;
-  output += `**${i18n.t("macro.description")}**: ${macro.description}\n`;
-  output += `**${i18n.t("macro.steps")}**: ${macro.toolSequence.length}\n`;
-  output += `**${i18n.t("macro.use_count")}**: ${macro.useCount}\n`;
+  output += `${i18n.t("macro.description")}: ${macro.description}\n`;
+  output += `${i18n.t("macro.steps")}: ${macro.toolSequence.length}\n`;
+  output += `${i18n.t("macro.use_count")}: ${macro.useCount}\n`;
 
   if (macro.tags.length > 0) {
-    output += `**${i18n.t("macro.tags")}**: ${macro.tags.join(", ")}\n`;
+    output += `${i18n.t("macro.tags")}: ${macro.tags.join(", ")}\n`;
   }
 
-  output += `\n**${i18n.t("macro.sequence")}**:\n`;
+  output += `\n${i18n.t("macro.sequence")}:\n`;
   for (let i = 0; i < macro.toolSequence.length; i++) {
     const step = macro.toolSequence[i];
     output += `${i + 1}. \`${step.tool}\``;

@@ -62,13 +62,13 @@ export const createEvolutionTools: ToolFactory = (ctx) => {
 
         for (const s of suggestions) {
           output += `### ✨ ${s.name}\n`;
-          output += `- **${i18n.t("evolve.menu_type")}**: ${formatCapabilityType(i18n, s.type)}\n`;
-          output += `- **${i18n.t("evolve.menu_reason")}**: ${s.reason}\n`;
-          output += `- **${i18n.t("evolve.menu_pattern_id")}**: \`${s.pattern.id}\`\n`;
+          output += `- ${i18n.t("evolve.menu_type")}: ${formatCapabilityType(i18n, s.type)}\n`;
+          output += `- ${i18n.t("evolve.menu_reason")}: ${s.reason}\n`;
+          output += `- ${i18n.t("evolve.menu_pattern_id")}: \`${s.pattern.id}\`\n`;
 
           const relatedStr = formatRelatedInstincts(s.pattern.type as Domain);
           if (relatedStr) {
-            output += `- **${i18n.t("evolve.menu_instincts")}**: ${relatedStr}\n`;
+            output += `- ${i18n.t("evolve.menu_instincts")}: ${relatedStr}\n`;
           }
           output += "\n";
         }
@@ -93,12 +93,12 @@ export const createEvolutionTools: ToolFactory = (ctx) => {
         output += `${i18n.t("capabilities.intro")}\n\n`;
         for (const cap of state.evolution.capabilities) {
           output += `### ✨ ${cap.name}\n`;
-          output += `- **${i18n.t("capabilities.type")}**: ${formatCapabilityType(
+          output += `- ${i18n.t("capabilities.type")}: ${formatCapabilityType(
             i18n,
             cap.type,
           )}\n`;
-          output += `- **${i18n.t("capabilities.description")}**: ${cap.description}\n`;
-          output += `- **${i18n.t("capabilities.consumed")}**: ${format(
+          output += `- ${i18n.t("capabilities.description")}: ${cap.description}\n`;
+          output += `- ${i18n.t("capabilities.consumed")}: ${format(
             new Date(cap.createdAt),
             "yyyy-MM-dd",
           )}\n\n`;
@@ -130,7 +130,7 @@ export const createEvolutionTools: ToolFactory = (ctx) => {
 
           for (const inst of domainInstincts.slice(0, 10)) {
             const confidence = Math.round(inst.confidence * 100);
-            output += `- **${inst.title}** (${confidence}% confidence)\n`;
+            output += `- ${inst.title} (${confidence}% confidence)\n`;
             output += `  - Description: ${inst.description}\n`;
           }
           output += "\n";

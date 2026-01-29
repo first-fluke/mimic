@@ -34,8 +34,8 @@ export const createGitTools: ToolFactory = (ctx) => {
         let output = `${i18n.t("commit.suggestions_title")}\n\n`;
 
         if (diff) {
-          output += `**${i18n.t("commit.files_changed")}**: ${diff.filesChanged.length}\n`;
-          output += `**${i18n.t("commit.additions")}**: +${diff.additions} / **${i18n.t("commit.deletions")}**: -${diff.deletions}\n\n`;
+          output += `${i18n.t("commit.files_changed")}: ${diff.filesChanged.length}\n`;
+          output += `${i18n.t("commit.additions")}: +${diff.additions} / ${i18n.t("commit.deletions")}: -${diff.deletions}\n\n`;
         }
 
         for (let i = 0; i < suggestions.length; i++) {
@@ -43,11 +43,11 @@ export const createGitTools: ToolFactory = (ctx) => {
           const confidence =
             "●".repeat(Math.round(s.confidence * 5)) + "○".repeat(5 - Math.round(s.confidence * 5));
           output += `### ${i + 1}. \`${s.message}\`\n`;
-          output += `- **${i18n.t("commit.type")}**: ${s.type}\n`;
+          output += `- ${i18n.t("commit.type")}: ${s.type}\n`;
           if (s.scope) {
-            output += `- **${i18n.t("commit.scope")}**: ${s.scope}\n`;
+            output += `- ${i18n.t("commit.scope")}: ${s.scope}\n`;
           }
-          output += `- **${i18n.t("commit.confidence")}**: [${confidence}]\n\n`;
+          output += `- ${i18n.t("commit.confidence")}: [${confidence}]\n\n`;
         }
 
         output += `*${i18n.t("commit.usage_hint")}*`;

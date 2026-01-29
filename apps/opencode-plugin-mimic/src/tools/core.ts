@@ -1,4 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
+import { all } from "better-all";
 import { getGitHistory, getRecentlyModifiedFiles } from "@/lib/git";
 import { formatPatternType } from "@/lib/i18n";
 import { surfacePatterns } from "@/modules/observation/patterns";
@@ -58,8 +59,10 @@ export const createCoreTools: ToolFactory = (ctx) => {
         const i18n = await i18nPromise;
         const innerCtx = { stateManager, directory, i18n };
         const state = await stateManager.read();
-        const recentFiles = getRecentlyModifiedFiles(directory);
-        const gitHistory = getGitHistory(directory, 5);
+        const { recentFiles, gitHistory } = await all({
+          recentFiles: getRecentlyModifiedFiles(directory),
+          gitHistory: getGitHistory(directory, 5),
+        });
 
         let output = `${i18n.t("status.title", { project: state.project.name })}\n\n`;
         output += `${i18n.t("status.session", { count: state.journey.sessionCount })}\n`;
@@ -103,7 +106,7 @@ export const createCoreTools: ToolFactory = (ctx) => {
         const i18n = await i18nPromise;
         const innerCtx = { stateManager, directory, i18n };
         const state = await stateManager.read();
-        const gitHistory = getGitHistory(directory, 10);
+        const gitHistory = await getGitHistory(directory, 10);
         return formatJourney(innerCtx, state, gitHistory);
       },
     }),
@@ -135,7 +138,7 @@ export const createCoreTools: ToolFactory = (ctx) => {
           })}\n`;
           for (const p of patterns.slice(0, 10)) {
             const status = p.surfaced ? "✓" : "○";
-            output += `${status} **${p.description}** (${p.count}x)\n`;
+            output += `${status} ${p.description} (${p.count}x)\n`;
           }
           output += "\n";
         }
@@ -151,8 +154,10 @@ export const createCoreTools: ToolFactory = (ctx) => {
         const i18n = await i18nPromise;
         const innerCtx = { stateManager, directory, i18n };
         const state = await stateManager.read();
-        const gitHistory = getGitHistory(directory, 20);
-        const recentFiles = getRecentlyModifiedFiles(directory);
+        const { gitHistory, recentFiles } = await all({
+          gitHistory: getGitHistory(directory, 20),
+          recentFiles: getRecentlyModifiedFiles(directory),
+        });
         return formatGrowAnalysis(innerCtx, state, gitHistory, recentFiles);
       },
     }),

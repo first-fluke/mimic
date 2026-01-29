@@ -70,7 +70,7 @@ export function formatJourney(ctx: MimicContext, state: State, gitHistory: strin
   if (state.evolution.capabilities.length > 0) {
     output += `${ctx.i18n.t("journey.powers")}\n`;
     for (const cap of state.evolution.capabilities.slice(-5)) {
-      output += `- **${cap.name}** (${formatCapabilityType(
+      output += `- ${cap.name} (${formatCapabilityType(
         ctx.i18n,
         cap.type,
       )}): ${cap.description}\n`;

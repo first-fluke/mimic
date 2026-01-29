@@ -88,7 +88,7 @@ describe("i18n", () => {
 
     it("interpolates variables", () => {
       const i18n = createI18n("en-US");
-      expect(i18n.t("status.session", { count: 5 })).toBe("**Session**: 5");
+      expect(i18n.t("status.session", { count: 5 })).toBe("Session: 5");
     });
 
     it("falls back to default language if key missing in target", () => {

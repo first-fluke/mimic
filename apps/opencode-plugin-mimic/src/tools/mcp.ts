@@ -41,8 +41,8 @@ export const createMcpTools: ToolFactory = (ctx) => {
         const popularLines = popular
           .map((server) =>
             server.url
-              ? `- **${server.name}** - ${server.desc}: \`${server.url}\``
-              : `- **${server.name}** - ${server.desc}`,
+              ? `- ${server.name} - ${server.desc}: \`${server.url}\``
+              : `- ${server.name} - ${server.desc}`,
           )
           .join("\n");
         return `${i18n.t("mcp_search.header", {

@@ -15,6 +15,24 @@ export interface MimicUserConfig {
     /** Whether to use LLM-based analysis (default: true if model is set) */
     enabled?: boolean;
   };
+  thresholds?: {
+    /** Minimum tool usage count before suggesting (default: 10) */
+    tool?: number;
+    /** Minimum file modification count before suggesting (default: 5) */
+    file?: number;
+    /** Minimum commit pattern count before suggesting (default: 3) */
+    commit?: number;
+    /** Minimum sequence count before suggesting skill (default: 3) */
+    sequenceSkill?: number;
+    /** Minimum sequence count before suggesting agent (default: 5) */
+    sequenceAgent?: number;
+  };
+  docSkillGeneration?: {
+    /** Whether to auto-generate skills from README/CONTRIBUTING (default: true) */
+    enabled?: boolean;
+    /** Regenerate skills when docs change even if already exists (default: false) */
+    regenerateOnChange?: boolean;
+  };
 }
 
 const DEFAULT_LANGUAGE: Language = "en-US";
@@ -34,21 +52,21 @@ const MESSAGES: Record<Language, Record<string, string>> = {
     "init.ascii_art":
       "```\n    ╭─────────────────╮\n    │  ◉         ◉   │\n    │    ╲ ▰▰▰ ╱     │\n    │     ╲▰▰▰╱      │\n    ╰─────────────────╯\n       ╱╲╱╲╱╲╱╲╱╲\n```",
     "init.first_time":
-      "{ascii}\n\n# 📦 *creak...*\n\nA treasure chest? In **{project}**?\n\n*The lid opens slowly, revealing rows of gleaming teeth...*\n\nI'm **Mimic**. I look like a chest, but I'm always watching. Always learning.\n\n**What I devour... I mean, do:**\n- 👁️ Watch your patterns (tools, files, commits)\n- 🧠 Remember everything across sessions\n- 📜 Track your project's journey\n- ✨ Evolve new powers when I spot repetition\n\nUse `mimic_status` to check in, `mimic_journey` to see your story.\n\n*...the teeth retract. For now.*",
+      "{ascii}\n\n# 📦 *creak...*\n\nA treasure chest? In {project}?\n\n*The lid opens slowly, revealing rows of gleaming teeth...*\n\nI'm Mimic. I look like a chest, but I'm always watching. Always learning.\n\nWhat I devour... I mean, do:\n- 👁️ Watch your patterns (tools, files, commits)\n- 🧠 Remember everything across sessions\n- 📜 Track your project's journey\n- ✨ Evolve new powers when I spot repetition\n\nUse `mimic_status` to check in, `mimic_journey` to see your story.\n\n*...the teeth retract. For now.*",
     "init.returning.header": "# 📦 *creak...*",
-    "init.returning.welcome": "*The chest's eye opens* Ah, you're back to **{project}**.",
-    "init.returning.stats": "**Sessions**: {sessions} | **Patterns digested**: {patterns}",
+    "init.returning.welcome": "*The chest's eye opens* Ah, you're back to {project}.",
+    "init.returning.stats": "Sessions: {sessions} | Patterns digested: {patterns}",
     "init.returning.long_break":
       "*dust falls from the lid* It's been a while... but I remember everything:",
-    "init.returning.recent_obs_title": "**What I've been chewing on:**",
+    "init.returning.recent_obs_title": "What I've been chewing on:",
 
     "status.title": "## {project} Status",
-    "status.session": "**Session**: {count}",
-    "status.patterns": "**Patterns**: {total} detected, {surfaced} surfaced",
-    "status.tool_calls": "**Tool calls this session**: {count}",
-    "status.recent_files": "**Recently modified files:**",
-    "status.recent_commits": "**Recent commits:**",
-    "status.suggestions": "**Suggestions:**",
+    "status.session": "Session: {count}",
+    "status.patterns": "Patterns: {total} detected, {surfaced} surfaced",
+    "status.tool_calls": "Tool calls this session: {count}",
+    "status.recent_files": "Recently modified files:",
+    "status.recent_commits": "Recent commits:",
+    "status.suggestions": "Suggestions:",
 
     "patterns.none": "No patterns detected yet. Keep working, and I'll learn your patterns.",
     "patterns.title": "## Detected Patterns",
@@ -95,7 +113,7 @@ const MESSAGES: Record<Language, Record<string, string>> = {
     "evolve.menu_footer": '*Feed me a pattern ID:* `mimic_evolve({ accept: "pattern-id" })`',
     "evolve.domain_title": "## 📦 Domain Evolution Ready!",
     "evolve.domain_intro":
-      "*The mimic's eyes glow* I've learned enough about **{domain}** to evolve a specialist:",
+      "*The mimic's eyes glow* I've learned enough about {domain} to evolve a specialist:",
     "evolve.domain_instincts_header": "### 🧠 Clustered Instincts ({count})",
 
     "evolution.type.command": "command",
@@ -172,7 +190,7 @@ const MESSAGES: Record<Language, Record<string, string>> = {
     "focus.stack_label": "Stack",
 
     "mcp_search.header": '📦 *sniffs the air* Search for "{query}" MCP servers:\n\n🔗 {url}',
-    "mcp_search.popular": "**Popular MCP servers:**",
+    "mcp_search.popular": "Popular MCP servers:",
     "mcp_search.add":
       'Use `mimic_mcp` to add one: `mimic_mcp({ name: "context7", url: "https://mcp.context7.com/mcp" })`',
     "mcp_search.desc.context7": "Up-to-date docs",
@@ -202,17 +220,19 @@ const MESSAGES: Record<Language, Record<string, string>> = {
     "grow.question1": "- What treasure shall we hunt next?",
     "grow.question2": "- Are there forgotten corners of the dungeon?",
     "grow.question3": "- Does the current path lead to glory?",
-    "grow.current_hunt": "**Current hunt**: {focus}",
+    "grow.current_hunt": "Current hunt: {focus}",
     "grow.files_modified": "({count}x)",
     "grow.prey": "({count} prey)",
+    "notification.intensive_session": "🎯 Intensive session: {tools} tools used",
+    "notification.major_refactor": "🏗️ Major refactor: {files} files modified",
 
     "journey.title": "## 📦 {project}'s Journey",
     "journey.subtitle": "*The mimic opens its lid, revealing ancient scrolls within...*",
-    "journey.sessions_survived": "**Sessions survived**: {count}",
-    "journey.first_encounter": "**First encounter**: {date}",
-    "journey.abilities_gained": "**Abilities gained**: {count}",
-    "journey.treasures": "**Treasures inside**: {stack}",
-    "journey.current_hunt": "**Current hunt**: {focus}",
+    "journey.sessions_survived": "Sessions survived: {count}",
+    "journey.first_encounter": "First encounter: {date}",
+    "journey.abilities_gained": "Abilities gained: {count}",
+    "journey.treasures": "Treasures inside: {stack}",
+    "journey.current_hunt": "Current hunt: {focus}",
     "journey.victories": "### 🏆 Victories",
     "journey.witnessed": "### 👁️ What I've Witnessed",
     "journey.powers": "### ✨ Powers Absorbed",
@@ -314,12 +334,12 @@ const MESSAGES: Record<Language, Record<string, string>> = {
     "tool.observations.args.types": "Comma-separated list of observation types to filter",
     "observations.title": "## 📦 Observation Log",
     "observations.empty": "📦 *empty* No observations recorded yet.",
-    "observations.stats": "**Total**: {count} observations, **Size**: {size}",
+    "observations.stats": "Total: {count} observations, Size: {size}",
 
     "tool.session_context.description": "Get context from previous sessions",
     "session_context.title": "## 📦 Session Context",
     "session_context.empty": "📦 *yawns* No previous sessions to analyze.",
-    "session_context.patterns_title": "**Cross-session patterns:**",
+    "session_context.patterns_title": "Cross-session patterns:",
 
     "tool.generate_skills.description": "Generate declarative skills from learned instincts",
     "generate_skills.title": "## 📦 Skill Generation",
@@ -401,19 +421,19 @@ const MESSAGES: Record<Language, Record<string, string>> = {
     "init.ascii_art":
       "```\n    ╭─────────────────╮\n    │  ◉         ◉   │\n    │    ╲ ▰▰▰ ╱     │\n    │     ╲▰▰▰╱      │\n    ╰─────────────────╯\n       ╱╲╱╲╱╲╱╲╱╲\n```",
     "init.first_time":
-      "{ascii}\n\n# 📦 *끼익...*\n\n**{project}**에 보물상자라니?\n\n*뚜껑이 천천히 열리며 반짝이는 이빨이 보인다...*\n\n나는 **Mimic**. 상자처럼 보이지만 늘 지켜보고, 늘 배우지.\n\n**내가 먹는... 아니, 하는 일:**\n- 👁️ 패턴 관찰 (툴, 파일, 커밋)\n- 🧠 세션 간 기억\n- 📜 프로젝트 여정 기록\n- ✨ 반복을 보면 새 힘으로 진화\n\n`mimic_status`로 상태 확인, `mimic_journey`로 이야기 보기.\n\n*...이빨은 잠깐 숨겨둔다.*",
+      "{ascii}\n\n# 📦 *끼익...*\n\n{project}에 보물상자라니?\n\n*뚜껑이 천천히 열리며 반짝이는 이빨이 보인다...*\n\n나는 Mimic. 상자처럼 보이지만 늘 지켜보고, 늘 배우지.\n\n내가 먹는... 아니, 하는 일:\n- 👁️ 패턴 관찰 (툴, 파일, 커밋)\n- 🧠 세션 간 기억\n- 📜 프로젝트 여정 기록\n- ✨ 반복을 보면 새 힘으로 진화\n\n`mimic_status`로 상태 확인, `mimic_journey`로 이야기 보기.\n\n*...이빨은 잠깐 숨겨둔다.*",
     "init.returning.header": "# 📦 *끼익...*",
-    "init.returning.welcome": "*상자의 눈이 뜬다* **{project}**로 돌아왔네.",
-    "init.returning.stats": "**세션**: {sessions} | **소화한 패턴**: {patterns}",
+    "init.returning.welcome": "*상자의 눈이 뜬다* {project}로 돌아왔네.",
+    "init.returning.stats": "세션: {sessions} | 소화한 패턴: {patterns}",
     "init.returning.long_break": "*뚜껑에 먼지가 내려앉는다* 오랜만이야... 그래도 기억하고 있어:",
-    "init.returning.recent_obs_title": "**내가 기억하는 것들:**",
+    "init.returning.recent_obs_title": "내가 기억하는 것들:",
     "status.title": "## {project} 상태",
-    "status.session": "**세션**: {count}",
-    "status.patterns": "**패턴**: {total}개 감지, {surfaced}개 확인",
-    "status.tool_calls": "**이번 세션 도구 호출**: {count}",
-    "status.recent_files": "**최근 수정 파일:**",
-    "status.recent_commits": "**최근 커밋:**",
-    "status.suggestions": "**제안:**",
+    "status.session": "세션: {count}",
+    "status.patterns": "패턴: {total}개 감지, {surfaced}개 확인",
+    "status.tool_calls": "이번 세션 도구 호출: {count}",
+    "status.recent_files": "최근 수정 파일:",
+    "status.recent_commits": "최근 커밋:",
+    "status.suggestions": "제안:",
     "patterns.none": "아직 감지된 패턴이 없어요. 계속 작업하면 배워둘게요.",
     "patterns.title": "## 감지된 패턴",
     "patterns.total": "총 {count}개",
@@ -452,7 +472,7 @@ const MESSAGES: Record<Language, Record<string, string>> = {
     "evolve.menu_footer": '*패턴 ID를 먹여줘:* `mimic_evolve({ accept: "pattern-id" })`',
     "evolve.domain_title": "## 📦 도메인 진화 준비 완료!",
     "evolve.domain_intro":
-      "*눈이 빛난다* **{domain}**에 대해 충분히 배워서 전문가를 진화시킬 수 있어:",
+      "*눈이 빛난다* {domain}에 대해 충분히 배워서 전문가를 진화시킬 수 있어:",
     "evolve.domain_instincts_header": "### 🧠 클러스터된 본능 ({count}개)",
     "evolution.type.command": "명령",
     "evolution.type.shortcut": "단축키",
@@ -524,7 +544,7 @@ const MESSAGES: Record<Language, Record<string, string>> = {
     "focus.focus_label": "현재 포커스",
     "focus.stack_label": "스택",
     "mcp_search.header": '📦 *킁킁* "{query}" MCP 서버 검색:\n\n🔗 {url}',
-    "mcp_search.popular": "**인기 MCP 서버:**",
+    "mcp_search.popular": "인기 MCP 서버:",
     "mcp_search.add":
       '`mimic_mcp`로 추가: `mimic_mcp({ name: "context7", url: "https://mcp.context7.com/mcp" })`',
     "mcp_search.desc.context7": "최신 문서",
@@ -551,16 +571,16 @@ const MESSAGES: Record<Language, Record<string, string>> = {
     "grow.question1": "- 다음 보물은 무엇일까?",
     "grow.question2": "- 잊힌 구석은 없을까?",
     "grow.question3": "- 지금 길이 영광으로 이어질까?",
-    "grow.current_hunt": "**현재 포커스**: {focus}",
+    "grow.current_hunt": "현재 포커스: {focus}",
     "grow.files_modified": "({count}회)",
     "grow.prey": "({count}건)",
     "journey.title": "## 📦 {project}의 여정",
     "journey.subtitle": "*미믹이 뚜껑을 열어 오래된 두루마리를 펼친다...*",
-    "journey.sessions_survived": "**누적 세션**: {count}",
-    "journey.first_encounter": "**첫 만남**: {date}",
-    "journey.abilities_gained": "**얻은 능력**: {count}",
-    "journey.treasures": "**담긴 보물**: {stack}",
-    "journey.current_hunt": "**현재 포커스**: {focus}",
+    "journey.sessions_survived": "누적 세션: {count}",
+    "journey.first_encounter": "첫 만남: {date}",
+    "journey.abilities_gained": "얻은 능력: {count}",
+    "journey.treasures": "담긴 볼물: {stack}",
+    "journey.current_hunt": "현재 포커스: {focus}",
     "journey.victories": "### 🏆 성과",
     "journey.witnessed": "### 👁️ 내가 본 것",
     "journey.powers": "### ✨ 흡수한 능력",
@@ -656,12 +676,12 @@ const MESSAGES: Record<Language, Record<string, string>> = {
     "tool.observations.args.types": "필터할 관찰 유형(쉼표 구분)",
     "observations.title": "## 📦 관찰 로그",
     "observations.empty": "📦 *비어있음* 아직 기록된 관찰이 없어.",
-    "observations.stats": "**총**: {count}개 관찰, **크기**: {size}",
+    "observations.stats": "총: {count}개 관찰, 크기: {size}",
 
     "tool.session_context.description": "이전 세션 컨텍스트 가져오기",
     "session_context.title": "## 📦 세션 컨텍스트",
     "session_context.empty": "📦 *하품* 분석할 이전 세션이 없어.",
-    "session_context.patterns_title": "**세션 간 패턴:**",
+    "session_context.patterns_title": "세션 간 패턴:",
 
     "tool.generate_skills.description": "학습된 본능으로 선언적 스킬 생성",
     "generate_skills.title": "## 📦 스킬 생성",

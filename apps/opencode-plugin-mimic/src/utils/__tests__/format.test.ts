@@ -104,9 +104,9 @@ describe("format", () => {
       const state = mockState();
       const result = formatJourney(ctx, state, ["commit 1"]);
       expect(result).toContain("test-project's Journey");
-      expect(result).toContain("Sessions survived**: 10");
-      expect(result).toContain("Treasures inside**: TypeScript");
-      expect(result).toContain("Current hunt**: Refactoring");
+      expect(result).toContain("Sessions survived: 10");
+      expect(result).toContain("Treasures inside: TypeScript");
+      expect(result).toContain("Current hunt: Refactoring");
       expect(result).toContain("Victories");
       expect(result).toContain("Achieved something");
       expect(result).toContain("Powers Absorbed");

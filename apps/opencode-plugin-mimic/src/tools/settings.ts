@@ -24,16 +24,16 @@ export const createSettingsTools: ToolFactory = (ctx) => {
 
         return `## ${i18n.t("stats.title")}
 
-- **${i18n.t("stats.version")}**: ${state.version}
-- **${i18n.t("stats.total_sessions")}**: ${state.statistics.totalSessions}
-- **${i18n.t("stats.total_tool_calls")}**: ${state.statistics.totalToolCalls}
-- **${i18n.t("stats.patterns_detected")}**: ${state.patterns.length}
-- **${i18n.t("stats.milestones")}**: ${state.journey.milestones.length}
-- **${i18n.t("stats.observations")}**: ${state.journey.observations.length}
-- **${i18n.t("stats.session_records")}**: ${sessionFiles.length}
-- **${i18n.t("stats.first_session")}**: ${format(state.project.firstSession, "yyyy-MM-dd HH:mm:ss")}
-- **${i18n.t("stats.learning_enabled")}**: ${state.preferences.learningEnabled}
-- **${i18n.t("stats.suggestions_enabled")}**: ${state.preferences.suggestionEnabled}`;
+- ${i18n.t("stats.version")}: ${state.version}
+- ${i18n.t("stats.total_sessions")}: ${state.statistics.totalSessions}
+- ${i18n.t("stats.total_tool_calls")}: ${state.statistics.totalToolCalls}
+- ${i18n.t("stats.patterns_detected")}: ${state.patterns.length}
+- ${i18n.t("stats.milestones")}: ${state.journey.milestones.length}
+- ${i18n.t("stats.observations")}: ${state.journey.observations.length}
+- ${i18n.t("stats.session_records")}: ${sessionFiles.length}
+- ${i18n.t("stats.first_session")}: ${format(state.project.firstSession, "yyyy-MM-dd HH:mm:ss")}
+- ${i18n.t("stats.learning_enabled")}: ${state.preferences.learningEnabled}
+- ${i18n.t("stats.suggestions_enabled")}: ${state.preferences.suggestionEnabled}`;
       },
     }),
 
@@ -135,9 +135,9 @@ export const createSettingsTools: ToolFactory = (ctx) => {
 
         let output = `${i18n.t("focus.updated")}\n`;
         if (state.project.focus)
-          output += `- **${i18n.t("focus.focus_label")}**: ${state.project.focus}\n`;
+          output += `- ${i18n.t("focus.focus_label")}: ${state.project.focus}\n`;
         if (state.project.stack?.length)
-          output += `- **${i18n.t("focus.stack_label")}**: ${state.project.stack.join(", ")}\n`;
+          output += `- ${i18n.t("focus.stack_label")}: ${state.project.stack.join(", ")}\n`;
         return output;
       },
     }),

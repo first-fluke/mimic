@@ -99,7 +99,7 @@ export class SkillGenerator {
       .slice(0, 10)
       .map(
         (i) =>
-          `- **${i.title}** (${Math.round(i.confidence * 100)}% confidence)\n  ${i.description}`,
+          `- ${i.title} (${Math.round(i.confidence * 100)}% confidence)\n  ${i.description}`,
       )
       .join("\n");
 
@@ -129,7 +129,7 @@ ${metadata.description}
 
 ## Overview
 
-This skill encapsulates learned behaviors from repeated usage patterns in the **${metadata.domain}** domain.
+This skill encapsulates learned behaviors from repeated usage patterns in the ${metadata.domain} domain.
 
 ## Learned Behaviors
 
@@ -152,10 +152,10 @@ ${this.generateBestPractices(metadata.domain, instincts)}
 
 ## Context
 
-- **Domain**: ${metadata.domain}
-- **Generated**: ${now}
-- **Instincts Used**: ${instincts.length}
-- **Patterns Analyzed**: ${patterns.length}
+- Domain: ${metadata.domain}
+- Generated: ${now}
+- Instincts Used: ${instincts.length}
+- Patterns Analyzed: ${patterns.length}
 
 ## Customization
 
