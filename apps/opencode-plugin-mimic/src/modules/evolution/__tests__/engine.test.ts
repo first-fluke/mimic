@@ -95,7 +95,7 @@ describe("evolution", () => {
   });
 
   describe("suggestEvolution", () => {
-    it("suggests tool shortcut for frequent tool usage", () => {
+    it("suggests tool shortcut for frequent tool usage", async () => {
       const pattern = {
         id: "1",
         type: "tool" as const,
@@ -106,14 +106,14 @@ describe("evolution", () => {
         surfaced: false,
         examples: [],
       };
-      const suggestion = suggestEvolution(pattern, makeCtx());
+      const suggestion = await suggestEvolution(pattern, makeCtx());
       expect(suggestion?.type).toBe("shortcut");
       expect(suggestion?.name).toBe("quick-read-file");
     });
 
-    it("does not suggest shortcut for builtin tools", () => {
+    it("does not suggest shortcut for builtin tools", async () => {
       const builtinTools = ["bash", "read", "write", "edit", "grep", "glob"];
-      builtinTools.forEach((toolName) => {
+      for (const toolName of builtinTools) {
         const pattern = {
           id: "1",
           type: "tool" as const,
@@ -124,12 +124,12 @@ describe("evolution", () => {
           surfaced: false,
           examples: [],
         };
-        const suggestion = suggestEvolution(pattern, makeCtx());
+        const suggestion = await suggestEvolution(pattern, makeCtx());
         expect(suggestion).toBeNull();
-      });
+      }
     });
 
-    it("suggests hook for file modifications", () => {
+    it("suggests hook for file modifications", async () => {
       const pattern = {
         id: "2",
         type: "file" as const,
@@ -140,12 +140,12 @@ describe("evolution", () => {
         surfaced: false,
         examples: [],
       };
-      const suggestion = suggestEvolution(pattern, makeCtx());
+      const suggestion = await suggestEvolution(pattern, makeCtx());
       expect(suggestion?.type).toBe("hook");
       expect(suggestion?.name).toBe("watch-config-ts");
     });
 
-    it("suggests command for commit patterns", () => {
+    it("suggests command for commit patterns", async () => {
       const pattern = {
         id: "1",
         type: "commit" as const,
@@ -156,12 +156,12 @@ describe("evolution", () => {
         surfaced: false,
         examples: [],
       };
-      const suggestion = suggestEvolution(pattern, makeCtx());
+      const suggestion = await suggestEvolution(pattern, makeCtx());
       expect(suggestion?.type).toBe("command");
       expect(suggestion?.name).toBe("commit-fix-bug");
     });
 
-    it("suggests agent for complex sequence", () => {
+    it("suggests agent for complex sequence", async () => {
       const pattern = {
         id: "1",
         type: "sequence" as const,
@@ -172,11 +172,11 @@ describe("evolution", () => {
         surfaced: false,
         examples: [],
       };
-      const suggestion = suggestEvolution(pattern, makeCtx());
+      const suggestion = await suggestEvolution(pattern, makeCtx());
       expect(suggestion?.type).toBe("agent");
     });
 
-    it("suggests skill for simple sequence", () => {
+    it("suggests skill for simple sequence", async () => {
       const pattern = {
         id: "1",
         type: "sequence" as const,
@@ -187,11 +187,11 @@ describe("evolution", () => {
         surfaced: false,
         examples: [],
       };
-      const suggestion = suggestEvolution(pattern, makeCtx());
+      const suggestion = await suggestEvolution(pattern, makeCtx());
       expect(suggestion?.type).toBe("skill");
     });
 
-    it("returns null if thresholds not met", () => {
+    it("returns null if thresholds not met", async () => {
       const pattern = {
         id: "1",
         type: "tool" as const,
@@ -202,7 +202,7 @@ describe("evolution", () => {
         surfaced: false,
         examples: [],
       };
-      expect(suggestEvolution(pattern, makeCtx())).toBeNull();
+      expect(await suggestEvolution(pattern, makeCtx())).toBeNull();
     });
   });
 

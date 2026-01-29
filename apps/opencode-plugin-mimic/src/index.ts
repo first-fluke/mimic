@@ -51,14 +51,13 @@ export const mimic: Plugin = async ({ directory, client }) => {
   const MAX_TOOL_CALLS_MEMORY = 1000;
 
   /**
-   * Add tool call with memory limit enforcement
+   * Add tool call with memory limit enforcement using shift() for better GC
    */
   const addToolCall = (toolCall: ToolCall): void => {
-    toolCalls.push(toolCall);
-    // Keep only recent tool calls to prevent memory bloat in long sessions
-    if (toolCalls.length > MAX_TOOL_CALLS_MEMORY) {
-      toolCalls.splice(0, toolCalls.length - MAX_TOOL_CALLS_MEMORY);
+    if (toolCalls.length >= MAX_TOOL_CALLS_MEMORY) {
+      toolCalls.shift();
     }
+    toolCalls.push(toolCall);
   };
 
   const handleSessionCreated = async () => {
@@ -405,24 +404,35 @@ export const mimic: Plugin = async ({ directory, client }) => {
         // Session memory is optional
       }
 
+      const notifications: string[] = [];
+
       if (toolCalls.length > 20) {
         await stateManager.addObservation(
           i18n.t("obs.intensive_session", { tools: toolCalls.length }),
         );
+        notifications.push(i18n.t("notification.intensive_session", { tools: toolCalls.length }));
       }
       if (filesEdited.size > 10) {
         await stateManager.addMilestone(
           i18n.t("milestone.major_refactor", { files: filesEdited.size }),
         );
+        notifications.push(i18n.t("notification.major_refactor", { files: filesEdited.size }));
+      }
+
+      // Batch notifications into a single toast
+      let message = i18n.t("log.session_ended", {
+        duration: formatDuration(sessionDuration),
+        tools: toolCalls.length,
+        files: filesEdited.size,
+      });
+
+      if (notifications.length > 0) {
+        message += "\n\n" + notifications.join("\n");
       }
 
       await client.tui.showToast({
         body: {
-          message: i18n.t("log.session_ended", {
-            duration: formatDuration(sessionDuration),
-            tools: toolCalls.length,
-            files: filesEdited.size,
-          }),
+          message,
           variant: "info",
         },
       });

@@ -5,7 +5,7 @@ import { OPENCODE_EVENTS } from "@/constants/opencode-events";
 import { BUILTIN_TOOLS } from "@/constants/tools";
 import type { MimicContext } from "@/core/context";
 import type { StateManager } from "@/core/state";
-import { formatCapabilityType } from "@/lib/i18n";
+import { formatCapabilityType, loadMimicConfig } from "@/lib/i18n";
 import { findRepresentativePattern } from "@/modules/knowledge/instincts";
 import type { CapabilityType, Domain, EvolvedCapability, Pattern } from "@/types";
 import { generateId } from "@/utils/id";
@@ -251,10 +251,32 @@ function updateEvolutionState(
   }
 }
 
-export function suggestEvolution(pattern: Pattern, ctx: MimicContext): EvolutionSuggestion | null {
+// Default thresholds for pattern suggestions
+const DEFAULT_THRESHOLDS = {
+  tool: 10,
+  file: 5,
+  commit: 3,
+  sequenceSkill: 3,
+  sequenceAgent: 5,
+};
+
+async function getThresholds() {
+  const config = await loadMimicConfig();
+  return {
+    tool: config.thresholds?.tool ?? DEFAULT_THRESHOLDS.tool,
+    file: config.thresholds?.file ?? DEFAULT_THRESHOLDS.file,
+    commit: config.thresholds?.commit ?? DEFAULT_THRESHOLDS.commit,
+    sequenceSkill: config.thresholds?.sequenceSkill ?? DEFAULT_THRESHOLDS.sequenceSkill,
+    sequenceAgent: config.thresholds?.sequenceAgent ?? DEFAULT_THRESHOLDS.sequenceAgent,
+  };
+}
+
+export async function suggestEvolution(pattern: Pattern, ctx: MimicContext): Promise<EvolutionSuggestion | null> {
+  const thresholds = await getThresholds();
+
   switch (pattern.type) {
     case "tool":
-      if (pattern.count >= 10) {
+      if (pattern.count >= thresholds.tool) {
         const toolName = pattern.description;
         if (BUILTIN_TOOLS.has(toolName)) {
           return null;
@@ -272,7 +294,7 @@ export function suggestEvolution(pattern: Pattern, ctx: MimicContext): Evolution
       break;
 
     case "file":
-      if (pattern.count >= 5) {
+      if (pattern.count >= thresholds.file) {
         return {
           type: "hook",
           name: `watch-${pattern.description.split("/").pop()?.replace(/\./g, "-") || "file"}`,
@@ -286,7 +308,7 @@ export function suggestEvolution(pattern: Pattern, ctx: MimicContext): Evolution
       break;
 
     case "commit":
-      if (pattern.count >= 3) {
+      if (pattern.count >= thresholds.commit) {
         return {
           type: "command",
           name: `commit-${pattern.description.slice(0, 20).replace(/\s+/g, "-").toLowerCase()}`,
@@ -300,7 +322,7 @@ export function suggestEvolution(pattern: Pattern, ctx: MimicContext): Evolution
       break;
 
     case "sequence":
-      if (pattern.count >= 5) {
+      if (pattern.count >= thresholds.sequenceAgent) {
         return {
           type: "agent",
           name: `${pattern.description.slice(0, 15).replace(/\s+/g, "-").toLowerCase()}-specialist`,
@@ -311,7 +333,7 @@ export function suggestEvolution(pattern: Pattern, ctx: MimicContext): Evolution
           pattern,
         };
       }
-      if (pattern.count >= 3) {
+      if (pattern.count >= thresholds.sequenceSkill) {
         return {
           type: "skill",
           name: `auto-${pattern.description.slice(0, 15).replace(/\s+/g, "-").toLowerCase()}`,
@@ -335,7 +357,7 @@ export async function getEvolutionSuggestions(ctx: MimicContext): Promise<Evolut
   for (const pattern of state.patterns) {
     if (pattern.surfaced) continue;
 
-    const suggestion = suggestEvolution(pattern, ctx);
+    const suggestion = await suggestEvolution(pattern, ctx);
     if (suggestion) {
       suggestions.push(suggestion);
     }
@@ -344,12 +366,54 @@ export async function getEvolutionSuggestions(ctx: MimicContext): Promise<Evolut
   return suggestions;
 }
 
+export async function previewEvolution(
+  ctx: MimicContext,
+  suggestion: EvolutionSuggestion,
+): Promise<{ content: string; filePath: string; preview: string }> {
+  const { filePath, content } = await buildEvolutionOutput(ctx, suggestion);
+
+  // Generate preview summary
+  const lines = content.split("\n");
+  const previewLines = lines.slice(0, 30);
+  const hasMore = lines.length > 30;
+
+  const preview = [
+    "## Preview",
+    "",
+    `**Type**: ${suggestion.type}`,
+    `**Name**: ${suggestion.name}`,
+    `**File**: ${filePath}`,
+    `**Lines**: ${lines.length}`,
+    "",
+    "**Content Preview** (first 30 lines):",
+    "```",
+    ...previewLines,
+    hasMore ? "... (truncated)" : "",
+    "```",
+    "",
+    "**Pattern Source**:",
+    `- ${suggestion.pattern.description} (${suggestion.pattern.count}x observed)`,
+  ].join("\n");
+
+  return { content, filePath, preview };
+}
+
 export async function evolveCapability(
   ctx: MimicContext,
   suggestion: EvolutionSuggestion,
-): Promise<{ capability: EvolvedCapability; filePath: string }> {
+  dryRun = false,
+): Promise<{ capability: EvolvedCapability; filePath: string; preview?: string }> {
   const state = await ctx.stateManager.read();
-  const { filePath, content } = await buildEvolutionOutput(ctx, suggestion);
+  const { filePath, content, preview } = await previewEvolution(ctx, suggestion);
+
+  if (dryRun) {
+    return {
+      capability: createCapabilityFromSuggestion(suggestion),
+      filePath,
+      preview,
+    };
+  }
+
   await writeFile(filePath, content, "utf-8");
 
   const capability = createCapabilityFromSuggestion(suggestion);
@@ -373,9 +437,9 @@ export function formatEvolutionResult(
 ): string {
   const typeLabel = formatCapabilityType(ctx.i18n, capability.type);
   let result = `### ✨ ${capability.name}\n\n`;
-  result += `**${ctx.i18n.t("evolution.result.type")}**: ${typeLabel}\n`;
-  result += `**${ctx.i18n.t("evolution.result.description")}**: ${capability.description}\n`;
-  result += `**${ctx.i18n.t("evolution.result.file")}**: \`${filePath}\`\n\n`;
+  result += `${ctx.i18n.t("evolution.result.type")}: ${typeLabel}\n`;
+  result += `${ctx.i18n.t("evolution.result.description")}: ${capability.description}\n`;
+  result += `${ctx.i18n.t("evolution.result.file")}: \`${filePath}\`\n\n`;
   result += `*${ctx.i18n.t("evolution.result.restart", { type: typeLabel })}*\n\n`;
 
   switch (capability.type) {

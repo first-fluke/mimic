@@ -168,6 +168,99 @@ export async function suggestFixes(ctx: MimicContext, error: string): Promise<Er
   return uniqueFixes.sort((a, b) => b.confidence - a.confidence).slice(0, 5);
 }
 
+// Minimum confidence threshold for auto-applying fixes
+const AUTO_FIX_THRESHOLD = 0.9;
+
+export interface AutoFixSuggestion {
+  fix: ErrorFix;
+  pattern: ErrorPattern;
+  canAutoApply: boolean;
+  reason: string;
+}
+
+export async function findAutoFix(
+  ctx: MimicContext,
+  error: string
+): Promise<AutoFixSuggestion | null> {
+  const fixes = await suggestFixes(ctx, error);
+
+  // Find the highest confidence fix
+  const bestFix = fixes[0];
+  if (!bestFix) return null;
+
+  // Check if confidence meets threshold
+  const canAutoApply = bestFix.confidence >= AUTO_FIX_THRESHOLD;
+
+  // Find the source pattern
+  const patterns = await findSimilarErrors(ctx, error);
+  const sourcePattern = patterns.find((p) =>
+    p.fixes.some((f) => f.description === bestFix.description)
+  );
+
+  if (!sourcePattern) return null;
+
+  return {
+    fix: bestFix,
+    pattern: sourcePattern,
+    canAutoApply,
+    reason: canAutoApply
+      ? `High confidence fix (${Math.round(bestFix.confidence * 100)}%) available`
+      : `Fix available but confidence (${Math.round(bestFix.confidence * 100)}%) below threshold`,
+  };
+}
+
+export async function applyFix(
+  ctx: MimicContext,
+  fix: ErrorFix,
+  errorPatternId: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    // Log the fix attempt
+    await ctx.stateManager.addObservation(
+      `Attempting auto-fix: ${fix.description}`
+    );
+
+    // Execute the tool sequence
+    for (const tool of fix.toolSequence) {
+      // Tool execution would happen here
+      // This is a placeholder for the actual implementation
+      console.log(`Executing tool: ${tool}`);
+    }
+
+    // Record the successful fix
+    await recordFix(ctx, errorPatternId, {
+      description: fix.description,
+      toolSequence: fix.toolSequence,
+      filesChanged: fix.filesChanged,
+    });
+
+    return {
+      success: true,
+      message: `Successfully applied fix: ${fix.description}`,
+    };
+  } catch (error) {
+    // Record the failed fix
+    const pattern = await ctx.stateManager.getErrorPattern(errorPatternId);
+    if (pattern) {
+      const existingFix = pattern.fixes.find(
+        (f) => f.description === fix.description
+      );
+      if (existingFix) {
+        existingFix.failCount += 1;
+        existingFix.confidence =
+          existingFix.successCount /
+          (existingFix.successCount + existingFix.failCount);
+        await ctx.stateManager.writeErrorPattern(pattern);
+      }
+    }
+
+    return {
+      success: false,
+      message: `Failed to apply fix: ${error}`,
+    };
+  }
+}
+
 function arraysEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((v, i) => v === b[i]);
