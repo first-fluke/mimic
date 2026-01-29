@@ -1,3 +1,4 @@
+import { BUILTIN_TOOLS, SERENA_TOOLS } from "@/constants/tools";
 import type { MimicContext } from "@/core/context";
 import { loadMimicConfig, type MimicUserConfig } from "@/lib/i18n";
 import { normalizeDomain } from "@/modules/knowledge/instincts";
@@ -163,13 +164,29 @@ function analyzePatterns(input: ObserverInput): RawInstinct[] {
 }
 
 function extractToolInstincts(patterns: Pattern[]): RawInstinct[] {
-  const toolPatterns = patterns.filter((p) => p.type === "tool" && p.count >= 5);
+  const toolPatterns = patterns.filter(
+    (p) => p.type === "tool" && p.count >= 5 && !BUILTIN_TOOLS.has(p.description)
+  );
   if (toolPatterns.length < 3) return [];
 
   const topTools = toolPatterns
     .sort((a, b) => b.count - a.count)
     .slice(0, 5)
     .map((p) => p.description);
+
+  // Check for Serena tool patterns
+  const serenaPatterns = toolPatterns.filter((p) => SERENA_TOOLS.has(p.description));
+  if (serenaPatterns.length >= 2) {
+    return [
+      {
+        title: `Code analysis workflow: ${topTools.slice(0, 3).join(", ")}`,
+        description: `Uses Serena tools for code exploration: ${topTools.join(", ")}`,
+        domain: "tooling",
+        confidence: Math.min(0.9, 0.5 + toolPatterns.length * 0.1),
+        patternIDs: toolPatterns.map((p) => p.id),
+      },
+    ];
+  }
 
   return [
     {
@@ -230,6 +247,27 @@ function extractSequenceInstincts(patterns: Pattern[]): RawInstinct[] {
   const instincts: RawInstinct[] = [];
 
   for (const seq of sequencePatterns.slice(0, 2)) {
+    // Skip sequences that only contain builtin tools
+    const toolsInSequence = seq.description.split(" → ");
+    const hasOnlyBuiltinTools = toolsInSequence.every((tool) => BUILTIN_TOOLS.has(tool));
+    if (hasOnlyBuiltinTools) continue;
+
+    // Detect Serena workflow patterns
+    const hasSerenaTools = toolsInSequence.some((tool) => SERENA_TOOLS.has(tool));
+    if (hasSerenaTools) {
+      const serenaWorkflowType = detectSerenaWorkflow(toolsInSequence);
+      if (serenaWorkflowType) {
+        instincts.push({
+          title: `Serena workflow: ${serenaWorkflowType}`,
+          description: `Code analysis workflow: "${seq.description}" (${seq.count}x observed)`,
+          domain: "tooling",
+          confidence: Math.min(0.9, 0.6 + seq.count * 0.05),
+          patternIDs: [seq.id],
+        });
+        continue;
+      }
+    }
+
     let domain = "tooling";
     const desc = seq.description.toLowerCase();
     if (desc.includes("test")) domain = "testing";
@@ -246,6 +284,45 @@ function extractSequenceInstincts(patterns: Pattern[]): RawInstinct[] {
   }
 
   return instincts;
+}
+
+// Detect specific Serena workflow patterns
+function detectSerenaWorkflow(tools: string[]): string | null {
+  const toolSet = new Set(tools);
+
+  // Navigation workflow: find_file → get_symbols_overview → find_symbol
+  if (
+    toolSet.has("serena_find_file") &&
+    toolSet.has("serena_get_symbols_overview") &&
+    toolSet.has("serena_find_symbol")
+  ) {
+    return "Code Navigator";
+  }
+
+  // Refactoring workflow: find_symbol → find_referencing_symbols → replace_symbol_body
+  if (
+    toolSet.has("serena_find_symbol") &&
+    toolSet.has("serena_find_referencing_symbols") &&
+    (toolSet.has("serena_replace_symbol_body") || toolSet.has("serena_rename_symbol"))
+  ) {
+    return "Safe Refactor";
+  }
+
+  // Pattern search workflow: search_for_pattern → replace_content
+  if (toolSet.has("serena_search_for_pattern") && toolSet.has("serena_replace_content")) {
+    return "Pattern Editor";
+  }
+
+  // Analysis workflow: list_dir → find_file → get_symbols_overview
+  if (
+    toolSet.has("serena_list_dir") &&
+    toolSet.has("serena_find_file") &&
+    toolSet.has("serena_get_symbols_overview")
+  ) {
+    return "Code Explorer";
+  }
+
+  return null;
 }
 
 function extractHotspotInstincts(topFiles: [string, number][]): RawInstinct[] {

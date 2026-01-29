@@ -1,3 +1,4 @@
+// Core system tools that should not be tracked for pattern learning
 export const BUILTIN_TOOLS = new Set([
   "read",
   "write",
@@ -5,17 +6,6 @@ export const BUILTIN_TOOLS = new Set([
   "bash",
   "grep",
   "glob",
-  "serena_list_dir",
-  "serena_find_file",
-  "serena_search_for_pattern",
-  "serena_get_symbols_overview",
-  "serena_find_symbol",
-  "serena_find_referencing_symbols",
-  "serena_replace_symbol_body",
-  "serena_insert_after_symbol",
-  "serena_insert_before_symbol",
-  "serena_replace_content",
-  "serena_rename_symbol",
   "lsp_diagnostics",
   "lsp_goto_definition",
   "lsp_find_references",
@@ -36,3 +26,21 @@ export const BUILTIN_TOOLS = new Set([
   "session_search",
   "session_info",
 ]);
+
+// Serena tools - project analysis tools that CAN be learned from
+export const SERENA_TOOLS = new Set([
+  "serena_list_dir",
+  "serena_find_file",
+  "serena_search_for_pattern",
+  "serena_get_symbols_overview",
+  "serena_find_symbol",
+  "serena_find_referencing_symbols",
+  "serena_replace_symbol_body",
+  "serena_insert_after_symbol",
+  "serena_insert_before_symbol",
+  "serena_replace_content",
+  "serena_rename_symbol",
+]);
+
+// All tools that should be excluded from pattern learning
+export const EXCLUDED_FROM_LEARNING = new Set([...BUILTIN_TOOLS]);

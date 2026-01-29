@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { BUILTIN_TOOLS } from "@/constants/tools";
 import type { Domain, ErrorPattern, Instinct, Macro, State } from "@/types";
 
 const STATE_JSON_GITIGNORE_LINE = ".opencode/mimic/";
@@ -298,12 +299,16 @@ export class StateManager {
   async recordToolSequence(tools: string[]): Promise<void> {
     if (tools.length < 2) return;
 
+    // Filter out builtin tools from sequence
+    const filteredTools = tools.filter((t) => !BUILTIN_TOOLS.has(t));
+    if (filteredTools.length < 2) return;
+
     const state = await this.read();
     if (!state.statistics.toolSequences) {
       state.statistics.toolSequences = [];
     }
 
-    const sequenceKey = tools.slice(-3).join(" → ");
+    const sequenceKey = filteredTools.slice(-3).join(" → ");
     const existing = state.statistics.toolSequences.find(
       (s) => s.tools.join(" → ") === sequenceKey,
     );
@@ -313,7 +318,7 @@ export class StateManager {
       existing.lastSeen = Date.now();
     } else {
       state.statistics.toolSequences.push({
-        tools: tools.slice(-3),
+        tools: filteredTools.slice(-3),
         count: 1,
         lastSeen: Date.now(),
       });
