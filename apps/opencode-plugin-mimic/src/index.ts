@@ -18,6 +18,8 @@ import { createTools, recordMacroStep } from "@/tools";
 import type { Domain, EvolvedCapability, ToolCall } from "@/types";
 import { analyzeTimeSinceLastSession, formatDuration } from "@/utils/format";
 import { generateId } from "@/utils/id";
+import { VERSION } from "@/constants";
+
 
 export const mimic: Plugin = async ({ directory, client }) => {
   const stateManager = new StateManager(directory);
@@ -110,6 +112,14 @@ export const mimic: Plugin = async ({ directory, client }) => {
             sessions: state.journey.sessionCount,
             patterns: state.patterns.length,
           }) + hintMessage,
+        variant: "info",
+      },
+    });
+
+    await client.tui.showToast({
+      body: {
+        title: "[Mimic] 📦",
+        message: `v${VERSION}`,
         variant: "info",
       },
     });
