@@ -13,7 +13,13 @@
 		"apps/opencode-plugin-mimic": {
 			"path": "apps/opencode-plugin-mimic",
 			"release-type": "node",
-			"package-name": "opencode-plugin-mimic"
+			"package-name": "opencode-plugin-mimic",
+			"extra-files": [
+				{
+					"type": "generic",
+					"path": "src/constants/version.ts"
+				}
+			]
 		}
 	}
 }
