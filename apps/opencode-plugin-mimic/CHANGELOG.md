@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/first-fluke/mimic/compare/opencode-plugin-mimic@v0.3.0...opencode-plugin-mimic@v0.4.0) (2026-01-29)
+
+
+### Features
+
+* add doc-to-skill generation with hash tracking ([958aa18](https://github.com/first-fluke/mimic/commit/958aa181ce9db0e9448565e04fc02eee9de9eb21))
+* add global profile for cross-project instincts ([35b362b](https://github.com/first-fluke/mimic/commit/35b362bca75228ff789fcedbb3a9955b8bb4c5f0))
+* add MCP auto-detection for tech stacks ([5df1aae](https://github.com/first-fluke/mimic/commit/5df1aaef4b04447beef49ec07f3be3f8696f723b))
+* add self-healing error fixes and evolution preview ([6394d10](https://github.com/first-fluke/mimic/commit/6394d1071ccdcb1293105a164628b57ebf25ef5f))
+* add Serena tools pattern detection ([f71f02f](https://github.com/first-fluke/mimic/commit/f71f02ff389be0bcafc99b58bff94b0cea316f7b))
+
 ## [0.3.0](https://github.com/first-fluke/mimic/compare/opencode-plugin-mimic@v0.2.1...opencode-plugin-mimic@v0.3.0) (2026-01-29)
 
 
